@@ -3,6 +3,7 @@ import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, PrimaryGenerat
 import { Role } from '../enums.js'
 import { Hidden } from '../hooks/hidden.js'
 import { Auth } from './Auth.js'
+import { ProjectMembership } from './ProjectMembership.js'
 
 @Entity({ name: 'users' })
 export class User extends BaseEntity {
@@ -24,6 +25,8 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', default: Role.User })
     role!: Role
 
+  @OneToMany(() => ProjectMembership, (membership) => membership.user)
+    projectsMembership!: Relation<ProjectMembership[]>
   @OneToMany(() => Auth, (auth) => auth.user)
     auths!: Relation<Auth[]>
 

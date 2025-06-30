@@ -3,8 +3,8 @@ export enum Role {
   User = 'user'
 }
 
-export enum RequestStatus {
-  Pending = 'pending',
-  Approved = 'approved',
-  Rejected = 'rejected'
+export enum ProjectStatus {
+  OnHold = 'on_hold',
+  Completed = 'completed',
+  InProgress = 'in_progress'
 }
