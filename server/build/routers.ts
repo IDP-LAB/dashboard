@@ -1,9 +1,12 @@
 import APIRoot from '../routers/index.js'
+import CreateProduct from '../routers/products/create.js'
 import CreateUser from '../routers/users/create.js'
 import DeleteUser from '../routers/users/$id/delete.js'
 import EditUser from '../routers/users/$id/edit.js'
+import GetTags from '../routers/products/tags.js'
 import GetUser from '../routers/users/$id/get.js'
 import GetUserProfile from '../routers/users/profile.js'
+import ListProducts from '../routers/products/index.js'
 import ListUsers from '../routers/users/index.js'
 import TokenRefresh from '../routers/auth/refresh.js'
 import UserAuthentication from '../routers/auth/login.js'
@@ -16,6 +19,8 @@ export const routers = {
   '/auth/logout': UserLogout,
   '/auth/refresh': TokenRefresh,
   '/auth/signup': UserRegistration,
+  '/products': [CreateProduct, ListProducts],
+  '/products/tags': GetTags,
   '/users': [CreateUser, ListUsers],
   '/users/:id': [DeleteUser, EditUser, GetUser],
   '/users/profile': GetUserProfile

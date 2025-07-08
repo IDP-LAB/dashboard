@@ -2,11 +2,14 @@
 import type { z } from 'zod'
 import type { Router } from '../src/controllers/router.js'
 import type APIRoot from '../routers/index.js'
+import type CreateProduct from '../routers/products/create.js'
 import type CreateUser from '../routers/users/create.js'
 import type DeleteUser from '../routers/users/$id/delete.js'
 import type EditUser from '../routers/users/$id/edit.js'
+import type GetTags from '../routers/products/tags.js'
 import type GetUser from '../routers/users/$id/get.js'
 import type GetUserProfile from '../routers/users/profile.js'
+import type ListProducts from '../routers/products/index.js'
 import type ListUsers from '../routers/users/index.js'
 import type TokenRefresh from '../routers/auth/refresh.js'
 import type UserAuthentication from '../routers/auth/login.js'
@@ -52,6 +55,25 @@ export type Routers = {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof UserRegistration.methods.post>>>,
       request: z.infer<NonNullable<typeof UserRegistration.schema>['post']>,
       auth: undefined
+    }
+  },
+  '/products': {
+    get: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof ListProducts.methods.get>>>,
+      request: undefined,
+      auth: FirstParameter<typeof ListProducts>
+    },
+    post: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof CreateProduct.methods.post>>>,
+      request: z.infer<NonNullable<typeof CreateProduct.schema>['post']>,
+      auth: FirstParameter<typeof CreateProduct>
+    }
+  },
+  '/products/tags': {
+    get: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof GetTags.methods.get>>>,
+      request: undefined,
+      auth: FirstParameter<typeof GetTags>
     }
   },
   '/users': {
