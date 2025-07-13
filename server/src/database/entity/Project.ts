@@ -1,7 +1,9 @@
-import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn, type Relation } from 'typeorm'
-import { ProjectStatus } from '../enums'
-import { Product } from './Product'
-import { ProjectMembership } from './ProjectMembership'
+import { BaseEntity, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, type Relation } from 'typeorm'
+import { ProjectStatus } from '../enums.js'
+import { Item } from './Item.js'
+import { ProjectMembership } from './ProjectMembership.js'
+import { User } from './User.js'
+import { ItemMovement } from './ItemMovement.js'
 
 @Entity({ name: 'projects' })
 export class Project extends BaseEntity {
@@ -16,8 +18,12 @@ export class Project extends BaseEntity {
   })
     status!: ProjectStatus
 
+  @ManyToOne(() => User, (user) => user.projects)
+    owner!: Relation<User>
   @OneToMany(() => ProjectMembership, (membership) => membership.project)
     memberships!: Relation<ProjectMembership[]>
-  @OneToMany(() => Product, (product) => product.project)
-    products!: Relation<Product[]>
+  @OneToMany(() => Item, (item) => item.project)
+    products!: Relation<Item[]>
+  @OneToMany(() => ItemMovement, (movement) => movement.project)
+    movements!: Relation<ItemMovement[]>
 }

@@ -5,7 +5,6 @@ export const PERMISSIONS = {
   UPDATE: 1 << 2, // 4  (0100)
   DELETE: 1 << 3, // 8  (1000)
   
-  // Presets para facilitar
   VIEWER: 1, // READ
   EDITOR: 1 | 2 | 4, // READ | CREATE | UPDATE (7)
   ADMIN: 1 | 2 | 4 | 8, // READ | CREATE | UPDATE | DELETE (15)

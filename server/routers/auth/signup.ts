@@ -1,7 +1,6 @@
 import { Router } from '@/controllers/router.js'
 import { User } from '@/database/entity/User'
 import { Role } from '@/database/enums'
-import { nanoid } from 'nanoid'
 import z from 'zod'
 
 export default new Router({
@@ -25,11 +24,8 @@ export default new Router({
         })
       }
   
-      const user = await (await User.create({
-        ...schema,
-        uuid: nanoid(),
-        role: Role.User
-      })
+      const user = await (await User
+        .create({ ...schema, role: Role.User })
         .setPassword(schema.password))
         .save()
   

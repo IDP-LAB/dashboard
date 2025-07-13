@@ -17,7 +17,7 @@ export enum MethodType {
 }
 
 export const CodesSuccess = [200, 201] as const
-export const CodesError = [401, 400, 403, 404, 409, 422, 500] as const
+export const CodesError = [401, 400, 403, 404, 406, 409, 422, 500] as const
 export type MethodKeys = keyof typeof MethodType
 export type Codes = (typeof CodesSuccess[number]) | (typeof CodesError[number])
 

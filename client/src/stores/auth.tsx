@@ -5,14 +5,12 @@ import { create } from 'zustand';
 
 interface User {
   id: string;
-  uuid: string;
   username: string;
   email: string;
 }
 
 interface CustomJwtPayload extends JwtPayload {
   id?: string;
-  uuid?: string;
   username?: string;
   email?: string; 
 }
@@ -37,7 +35,6 @@ export const useSession = create<AuthState>((set) => ({
       
       const userData: User = {
         id: decodedToken.id || 'ID não fornecido',
-        uuid: decodedToken.uuid || 'UUID não fornecido',
         username: decodedToken.username || 'Username não fornecido',
         email: decodedToken.email || 'Email não fornecido',
       };
@@ -56,8 +53,8 @@ export const useSession = create<AuthState>((set) => ({
   logout: () => {
     Cookies.remove('Bearer');
     Cookies.remove('Refresh');
-    redirect('/login')
     set({ user: null, accessToken: null, isLoading: false });
+    redirect('/login')
   },
 
   checkAuthStatus: () => {
@@ -70,7 +67,6 @@ export const useSession = create<AuthState>((set) => ({
         if (decodedToken.exp && decodedToken.exp * 1000 > Date.now()) {
           const userData: User = {
             id: decodedToken.id || 'ID não fornecido',
-            uuid: decodedToken.uuid || 'UUID não fornecido',
             username: decodedToken.username || 'Username não fornecido',
             email: decodedToken.email || 'Email não fornecido',
           };

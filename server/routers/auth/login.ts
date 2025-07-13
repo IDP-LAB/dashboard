@@ -47,7 +47,6 @@ const router = new Router({
   
       const data = {
         id: user.id,
-        uuid: user.uuid,
         username: user.username,
         email: user.email
       }

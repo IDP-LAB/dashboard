@@ -26,11 +26,10 @@ export class CookiesStrategy extends Strategy<User> {
 
       const userData = jwt.verify(token, secret, { algorithms: ['HS512'] })
       if (typeof userData !== 'object' || !userData) return this.fail('Token inválido', 403)
-      if (!('id' in userData) || !('uuid' in userData)) return this.fail('Token incompleto', 401)
+      if (!('id' in userData)) return this.fail('Token incompleto', 401)
 
-      const { id, uuid } = userData
-      const user = await User.findOneBy({ id })
-      if (!user || user.uuid !== uuid) return this.fail('Usuário não encontrado', 401)
+      const user = await User.findOneBy({ id: userData.id })
+      if (!user) return this.fail('Usuário não encontrado', 401)
   
 
       return this.success(user)

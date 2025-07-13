@@ -1,7 +1,6 @@
 import { Router } from '@/controllers/router'
 import { User } from '@/database/entity/User'
 import { Role } from '@/database/enums'
-import { nanoid } from 'nanoid'
 import { z } from 'zod'
 
 export default new Router({
@@ -32,17 +31,13 @@ export default new Router({
         email: schema.email 
       })
 
-      if (existUser) {
-        return reply.status(422).send({
-          message: 'Um usuário com este email já existe no sistema.',
-        })
-      }
-
-
-      const user = await (await User.create({
-        ...schema,
-        uuid: nanoid()
+      if (existUser) return reply.status(422).send({
+        message: 'Um usuário com este email já existe no sistema.',
       })
+
+
+      const user = await (await User
+        .create({ ...schema })
         .setPassword(schema.password))
         .save()
 

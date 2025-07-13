@@ -51,7 +51,7 @@ async function getDatabase(database: 'mysql' | 'sqljs' = 'sqljs') {
 export default new DataSource({
   ...(await getDatabase(process.env.DATABASE_TYPE as 'mysql' | 'sqljs' | undefined)),
   synchronize: true,
-  logging: true,
+  // logging: true,
   entities: [join(path, 'entity', '**', '*.{js,ts}')],
   migrations: [join(path, 'migration', '**', '*.{js,ts}')],
 })

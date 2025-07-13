@@ -62,8 +62,7 @@ export default new Router({
   
       if (typeof userData !== 'object' || !userData)
         return reply.status(401).send({ message: 'Invalid token data' })
-      if (!('id' in userData) || !('uuid' in userData))
-        return reply.status(401).send({ message: 'Invalid token payload' })
+      if (!('id' in userData)) return reply.status(401).send({ message: 'Invalid token payload' })
   
       const expiresTokenInSeconds = timer.number(process.env.JWT_EXPIRE ?? '7d') as number
       const expiresRefreshInSeconds = timer.number(process.env.REFRESH_EXPIRE ?? '7d') as number

@@ -1,6 +1,6 @@
 import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn, type Relation } from 'typeorm'
-import { Project } from './Project'
-import { User } from './User'
+import { Project } from './Project.js'
+import { User } from './User.js'
 
 @Entity({ name: 'project_memberships' })
 export class ProjectMembership extends BaseEntity {
