@@ -4,6 +4,7 @@ import { useState } from 'react'
 export type ProductType = {
   id: number;
   name: string;
+  description?: string;
   location: string;
   quantity: number;
   tags: { id: number; name: string }[];
@@ -17,8 +18,10 @@ export type ProductType = {
 
 export type CreateProductData = {
   name: string;
-  location: string;
+  description?: string;
+  location?: string;
   quantity: number;
+  category: string;
   tags: string[];
   image?: string;
   barcode?: string;
@@ -29,6 +32,13 @@ export type CreateProductData = {
 export type TagSuggestion = {
   id: number;
   name: string;
+}
+
+export type ProductMetadata = {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500'
@@ -105,7 +115,7 @@ export function useProducts() {
   }
 
   // Listar produtos
-  const getProducts = async (page: number = 1, pageSize: number = 10): Promise<{ data: ProductType[]; metadata: any } | null> => {
+  const getProducts = async (page: number = 1, pageSize: number = 10): Promise<{ data: ProductType[]; metadata: ProductMetadata } | null> => {
     setLoading(true)
     setError(null)
 
@@ -131,7 +141,7 @@ export function useProducts() {
       const result = await response.json()
       return {
         data: result.data || [],
-        metadata: result.metadata || {}
+        metadata: result.metadata || { total: 0, page: 1, pageSize: 10, totalPages: 0 }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'

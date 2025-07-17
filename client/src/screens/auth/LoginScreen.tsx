@@ -4,11 +4,15 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { UserIcon, LockIcon, EyeIcon, EyeOffIcon } from "@/components/ui/Icons"
+import { useAuth, type LoginData } from "@/hooks/useAuth"
+import Link from "next/link"
 
 export function LoginScreen() {
+  const { loading, error, login, clearError } = useAuth()
+  
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string>("")
   const [showPassword, setShowPassword] = useState(false)
 
   // Função para verificar se a senha tem pelo menos um número ou símbolo
@@ -16,7 +20,7 @@ export function LoginScreen() {
     return /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)
   }
 
-  function handleSubmit(event: { preventDefault: () => void }) {
+  async function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault()
     
     // Verifica se a senha tem pelo menos um número ou símbolo antes de prosseguir
@@ -25,48 +29,30 @@ export function LoginScreen() {
       return
     }
     
-    setIsLoading(true)
+    clearError()
+    setSuccessMessage("")
     
-    setTimeout(() => {
-      try {
-        // Pega contas salvas do localStorage
-        const existingAccounts = JSON.parse(localStorage.getItem('tempAccounts') || '[]')
-        
-        console.log("Tentando login com:", email)
-        console.log("Contas disponíveis:", existingAccounts.map((acc: any) => acc.email))
-        
-        // Procura conta com email e senha corretos
-        const foundAccount = existingAccounts.find((account: any) => 
-          account.email === email && account.password === password
-        )
-        
-        if (foundAccount) {
-          console.log("Login realizado com sucesso!", foundAccount.name)
-          alert(`Bem-vindo(a), ${foundAccount.name}!`)
-          
-          // Limpa formulário
-          setEmail("")
-          setPassword("")
-        } else {
-          // Verifica se pelo menos o email existe
-          const emailExists = existingAccounts.some((account: any) => account.email === email)
-          
-          if (emailExists) {
-            console.log("Senha incorreta")
-            alert("Senha incorreta!")
-          } else {
-            console.log("Email não encontrado")
-            alert("Email não encontrado! Cadastre-se primeiro.")
-          }
-        }
-        
-      } catch (error) {
-        console.error("Erro ao fazer login:", error)
-        alert("Erro no sistema! Tente novamente.")
+    try {
+      const loginData: LoginData = {
+        email,
+        password
       }
       
-      setIsLoading(false)
-    }, 1500)
+      const result = await login(loginData)
+      
+      if (result && result.data.accessToken) {
+        setSuccessMessage(`Bem-vindo(a)! Login realizado com sucesso.`)
+        
+        // Limpa formulário
+        setEmail("")
+        setPassword("")
+        
+        // Remove mensagem de sucesso após 3 segundos
+        setTimeout(() => setSuccessMessage(""), 3000)
+      }
+    } catch (error) {
+      console.error("Erro ao fazer login:", error)
+    }
   }
 
   return (
@@ -78,6 +64,25 @@ export function LoginScreen() {
             <h1 className="text-2xl font-bold text-gray-900">Login</h1>
             <p className="text-gray-600">Entre com suas credenciais</p>
           </div>
+
+          {/* Mensagens de feedback */}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+              <div className="flex justify-between items-center">
+                <span>{error}</span>
+                <button onClick={clearError} className="text-red-700 hover:text-red-900 font-bold">×</button>
+              </div>
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+              <div className="flex justify-between items-center">
+                <span>{successMessage}</span>
+                <button onClick={() => setSuccessMessage("")} className="text-green-700 hover:text-green-900 font-bold">×</button>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             
@@ -125,11 +130,30 @@ export function LoginScreen() {
             <Button 
               type="submit" 
               className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-medium py-2.5"
-              disabled={isLoading}
+              disabled={loading}
             >
-              {isLoading ? "Entrando..." : "Entrar"}
+              {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
+
+          {/* Links de navegação */}
+          <div className="text-center space-y-3">
+            <p className="text-sm text-gray-600">
+              Não tem uma conta?{" "}
+              <Link href="/signup" className="text-cyan-600 hover:text-cyan-700 font-medium">
+                Cadastre-se aqui
+              </Link>
+            </p>
+            
+            {successMessage && (
+              <Link 
+                href="/productRegister" 
+                className="block w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200"
+              >
+                Ir para Cadastro de Produtos
+              </Link>
+            )}
+          </div>
 
         </div>
       </div>

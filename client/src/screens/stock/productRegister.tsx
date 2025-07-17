@@ -1,20 +1,33 @@
 "use client"
 
-import { useState, FormEvent, ChangeEvent, useRef, useEffect } from "react"
+import { useState, FormEvent, ChangeEvent, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Scanner } from "@yudiel/react-qr-scanner"
-import { useProducts, type CreateProductData, type TagSuggestion } from "@/hooks/useProducts"
+import { useProducts, type CreateProductData, type TagSuggestion, type ProductType } from "@/hooks/useProducts"
+
+// Types for scanner results
+interface IDetectedBarcode {
+  rawValue: string;
+}
+
+// Type for tag in product display
+interface ProductTag {
+  id: number;
+  name: string;
+}
 
 export function ProductRegister() {
   // Hooks da API
-  const { loading, error, createProduct, getTagSuggestions, clearError } = useProducts()
+  const { error, createProduct, getTagSuggestions, clearError } = useProducts()
 
   // Tipagem local para o formulário
   type FormProductType = {
     name: string;
-    location: string;
+    description?: string;
+    location?: string;
     quantity: number;
+    category: string;
     tags: string[];
     image?: string;
     barcode?: string;
@@ -23,15 +36,17 @@ export function ProductRegister() {
   // Estado para um produto no formulário
   const [product, setProduct] = useState<FormProductType>({
     name: "",
+    description: "",
     location: "",
     quantity: 0,
+    category: "",
     tags: [],
     image: "",
     barcode: ""
   })
 
   // Estado para lista dos produtos (agora apenas para exibição local)
-  const [productList, setProductList] = useState<any[]>([])
+  const [productList, setProductList] = useState<ProductType[]>([])
   
   // Estados para o sistema de tags
   const [tagInput, setTagInput] = useState("")
@@ -74,7 +89,7 @@ export function ProductRegister() {
   }
 
   // Função para buscar sugestões de tags da API
-  const fetchTagSuggestions = async (input: string) => {
+  const fetchTagSuggestions = useCallback(async (input: string) => {
     if (input.length < 2) {
       setSuggestedTags([])
       setShowSuggestions(false)
@@ -100,7 +115,7 @@ export function ProductRegister() {
     } finally {
       setLoadingTags(false)
     }
-  }
+  }, [product.tags, getTagSuggestions])
 
   // Debounce para busca de tags
   useEffect(() => {
@@ -111,7 +126,7 @@ export function ProductRegister() {
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [tagInput, product.tags])
+  }, [tagInput, fetchTagSuggestions])
 
   // Função para lidar com mudanças no input de tags
   const handleTagInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -222,18 +237,18 @@ export function ProductRegister() {
   }
 
   // Função para lidar com código de barras escaneado
-  const handleBarcodeScan = (result: any) => {
-    if (result && result[0]?.rawValue) {
+  const handleBarcodeScan = (detectedCodes: IDetectedBarcode[]) => {
+    if (detectedCodes && detectedCodes[0]?.rawValue) {
       setProduct(prev => ({
         ...prev,
-        barcode: result[0].rawValue
+        barcode: detectedCodes[0].rawValue
       }))
       setShowScanner(false)
     }
   }
 
   // Função para lidar com erro do scanner
-  const handleScanError = (error: any) => {
+  const handleScanError = (error: unknown) => {
     console.error('Erro no scanner:', error)
     alert('Erro ao acessar a câmera. Verifique as permissões.')
   }
@@ -243,8 +258,8 @@ export function ProductRegister() {
     event.preventDefault()
     
     // Validar campos obrigatórios
-    if (!product.name || !product.location || product.quantity <= 0 || product.tags.length === 0) {
-      alert('Por favor, preencha todos os campos obrigatórios')
+    if (!product.name || !product.category || product.quantity <= 0 || product.tags.length === 0) {
+      alert('Por favor, preencha todos os campos obrigatórios: Nome, Categoria, Quantidade e pelo menos uma Tag')
       return
     }
     
@@ -256,8 +271,10 @@ export function ProductRegister() {
       // Preparar dados para envio
       const productData: CreateProductData = {
         name: product.name,
-        location: product.location,
+        description: product.description || undefined,
+        location: product.location || undefined,
         quantity: product.quantity,
+        category: product.category,
         tags: product.tags,
         image: product.image,
         barcode: product.barcode
@@ -273,8 +290,10 @@ export function ProductRegister() {
         // Limpar formulário
         setProduct({
           name: "",
+          description: "",
           location: "",
           quantity: 0,
+          category: "",
           tags: [],
           image: "",
           barcode: ""
@@ -295,9 +314,14 @@ export function ProductRegister() {
     }
   }
 
-  return (
+    return (
     <div className="container mx-auto px-3 py-2 max-w-xl min-h-screen overflow-hidden">
-      <h1 className="text-xl font-bold mb-3">Cadastro de Produtos</h1>
+      <div className="mb-3">
+        <h1 className="text-xl font-bold mb-1">Cadastro de Produtos</h1>
+        <p className="text-sm text-gray-600">
+          Preencha todos os campos obrigatórios <span className="text-red-500">(*)</span> para cadastrar o produto
+        </p>
+      </div>
 
       {/* Mensagens de feedback */}
       {error && (
@@ -335,10 +359,29 @@ export function ProductRegister() {
           />
         </div>
 
-        {/* Localização - OBRIGATÓRIO */}
+        {/* Descrição do produto - OPCIONAL */}
         <div>
           <label className="block text-sm font-medium mb-1">
-            Localização <span className="text-red-500">*</span>
+            Descrição
+          </label>
+          <textarea
+            name="description"
+            value={product.description}
+            onChange={handleInputChange}
+            placeholder="Descreva detalhadamente o produto (materiais, características, especificações técnicas...)"
+            disabled={isSubmitting}
+            rows={4}
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Inclua informações técnicas, materiais, dimensões e características importantes
+          </p>
+        </div>
+
+        {/* Localização - OPCIONAL */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Localização
           </label>
           <Input
             type="text"
@@ -346,9 +389,27 @@ export function ProductRegister() {
             value={product.location}
             onChange={handleInputChange}
             placeholder="Digite onde o produto está localizado"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        {/* Categoria - OBRIGATÓRIO */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Categoria <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="text"
+            name="category"
+            value={product.category}
+            onChange={handleInputChange}
+            placeholder="Ex: Filamento, Eletrônicos, Ferramentas, Peças..."
             required
             disabled={isSubmitting}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Categoria ou tipo do produto para organização
+          </p>
         </div>
 
         {/* Quantidade - OBRIGATÓRIO */}
@@ -581,7 +642,7 @@ export function ProductRegister() {
           {/* Sugestões de tags */}
           {showSuggestions && suggestedTags.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-              {suggestedTags.map((suggestion, index) => (
+              {suggestedTags.map((suggestion) => (
                 <button
                   key={suggestion.id}
                   type="button"
@@ -638,7 +699,7 @@ export function ProductRegister() {
             </div>
           </Button>
         </div>
-      </form>
+            </form>
 
       {/* Modal do Scanner de Código de Barras */}
       {showScanner && isMobile && (
@@ -694,21 +755,27 @@ export function ProductRegister() {
         </div>
       )}
 
-      {/* Lista de produtos cadastrados */}
+      {/* Lista de produtos cadastrados - DADOS COMPLETOS */}
       {productList.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Produtos Cadastrados Recentemente</h2>
-          <div className="space-y-4">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            📦 Produtos Cadastrados Recentemente
+            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+              {productList.length} {productList.length === 1 ? 'item' : 'itens'}
+            </span>
+          </h2>
+          
+          <div className="space-y-6">
             {productList.map((item) => (
-              <div key={item.id} className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex gap-4">
+              <div key={item.id} className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="flex gap-6">
                   {/* Imagem do produto */}
                   {item.image && (
                     <div className="flex-shrink-0">
                       <img 
                         src={item.image} 
                         alt={item.name}
-                        className="w-20 h-20 object-cover rounded-md"
+                        className="w-24 h-24 object-cover rounded-lg border-2 border-gray-300 shadow-md"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none'
                         }}
@@ -716,33 +783,139 @@ export function ProductRegister() {
                     </div>
                   )}
                   
-                  {/* Informações do produto */}
+                  {/* Informações principais do produto */}
                   <div className="flex-1">
-                    <h3 className="font-medium text-lg">{item.name}</h3>
-                    <p className="text-sm text-gray-600 mb-1">📍 {item.location}</p>
-                    <p className="text-sm font-medium mb-1">Quantidade: {item.quantity}</p>
+                    {/* Header com nome e ID */}
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-bold text-xl text-gray-800">{item.name}</h3>
+                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                        ID: #{item.id}
+                      </div>
+                    </div>
+                    
+                    {/* Informações básicas */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">📍</span>
+                        <div>
+                          <span className="text-xs text-gray-500 block">Localização</span>
+                          <span className="font-medium text-gray-800">{item.location}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">📦</span>
+                        <div>
+                          <span className="text-xs text-gray-500 block">Quantidade</span>
+                          <span className="font-bold text-green-600">{item.quantity} unidades</span>
+                        </div>
+                      </div>
+                    </div>
                     
                     {/* Código de barras */}
                     {item.barcode && (
-                      <p className="text-sm text-gray-600 mb-1">📊 Código: {item.barcode}</p>
+                      <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">📊</span>
+                          <div>
+                            <span className="text-xs text-gray-500 block">Código de Barras</span>
+                            <span className="font-mono text-sm font-medium text-gray-800">{item.barcode}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Descrição (se existir) */}
+                    {item.description && (
+                      <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <span className="text-xs text-blue-600 font-medium block mb-1">📝 Descrição</span>
+                        <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
+                      </div>
                     )}
                     
                     {/* Tags */}
                     {item.tags && item.tags.length > 0 && (
-                      <div className="mt-2">
-                        <span className="text-sm font-medium">Tags: </span>
-                        {item.tags.map((tag: any, index: number) => (
-                          <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-2">
-                            {typeof tag === 'object' ? tag.name : tag}
-                          </span>
-                        ))}
+                      <div className="mb-4">
+                        <span className="text-xs text-gray-500 block mb-2">🏷️ Tags Associadas</span>
+                        <div className="flex flex-wrap gap-2">
+                          {item.tags.map((tag: ProductTag) => (
+                            <span 
+                              key={tag.id} 
+                              className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm"
+                            >
+                              {typeof tag === 'object' ? (
+                                <>
+                                  <span className="text-xs opacity-75">#{tag.id}</span>
+                                  {tag.name}
+                                </>
+                              ) : (
+                                tag
+                              )}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                     
-                    {/* Tipo e Projeto */}
-                    <div className="mt-2 text-xs text-gray-500">
-                      <span>Tipo: {item.type?.name}</span>
-                      {item.project?.name && <span className="ml-3">Projeto: {item.project.name}</span>}
+                    {/* Relacionamentos - Tipo e Projeto */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                      {item.type && (
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                          <span className="text-xs text-green-600 font-medium block">🗂️ Tipo de Produto</span>
+                          <span className="text-sm font-medium text-gray-800">
+                            {item.type.name} <span className="text-xs text-gray-500">(ID: {item.type.id})</span>
+                          </span>
+                        </div>
+                      )}
+                      
+                      {item.project && (
+                        <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                          <span className="text-xs text-orange-600 font-medium block">🚀 Projeto</span>
+                          <span className="text-sm font-medium text-gray-800">
+                            {item.project.name} <span className="text-xs text-gray-500">(ID: {item.project.id})</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Metadados de auditoria */}
+                    <div className="border-t pt-3 mt-4">
+                      <span className="text-xs text-gray-500 font-medium block mb-2">⏱️ Dados de Auditoria</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-500">✨</span>
+                          <div>
+                            <span className="text-gray-500">Criado em:</span>
+                            <br />
+                            <span className="font-mono text-gray-700">
+                              {new Date(item.createdAt).toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-500">🔄</span>
+                          <div>
+                            <span className="text-gray-500">Atualizado em:</span>
+                            <br />
+                            <span className="font-mono text-gray-700">
+                              {new Date(item.updatedAt).toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Dados técnicos adicionais */}
+                    <div className="mt-3 p-2 bg-gray-100 rounded text-xs">
+                      <details className="cursor-pointer">
+                        <summary className="font-medium text-gray-600 hover:text-gray-800">
+                          🔍 Dados Técnicos Completos
+                        </summary>
+                        <pre className="mt-2 text-xs bg-gray-800 text-green-400 p-3 rounded overflow-x-auto font-mono">
+{JSON.stringify(item, null, 2)}
+                        </pre>
+                      </details>
                     </div>
                   </div>
                 </div>

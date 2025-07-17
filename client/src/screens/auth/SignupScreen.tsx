@@ -4,13 +4,17 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { UserIcon, LockIcon, EyeIcon, EyeOffIcon } from "@/components/ui/Icons"
+import { useAuth, type SignupData } from "@/hooks/useAuth"
+import Link from "next/link"
 
 export function SignupScreen() {
+  const { loading, error, signup, clearError } = useAuth()
+  
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string>("")
   
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -31,7 +35,7 @@ export function SignupScreen() {
     return null
   }
 
-  function handleSubmit(event: { preventDefault: () => void }) {
+  async function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault()
     
     if (password !== confirmPassword) {
@@ -45,40 +49,20 @@ export function SignupScreen() {
       return
     }
     
-    setIsLoading(true)
+    clearError()
+    setSuccessMessage("")
     
-    // Simula criação da conta e salva no localStorage
-    setTimeout(() => {
-      try {
-        // Pega contas existentes ou cria array vazio
-        const existingAccounts = JSON.parse(localStorage.getItem('tempAccounts') || '[]')
-        
-        // Verifica se email já existe
-        const emailExists = existingAccounts.some((account: any) => account.email === email)
-        if (emailExists) {
-          alert("Este email já está cadastrado!")
-          setIsLoading(false)
-          return
-        }
-        
-        // Cria nova conta
-        const newAccount = {
-          id: Date.now(), // ID simples baseado no timestamp
-          name,
-          email,
-          password, // Em produção, isso seria criptografado
-          createdAt: new Date().toISOString()
-        }
-        
-        // Adiciona à lista e salva
-        existingAccounts.push(newAccount)
-        localStorage.setItem('tempAccounts', JSON.stringify(existingAccounts))
-        
-        console.log("Conta criada:", newAccount)
-        console.log("Todas as contas:", existingAccounts)
-        
-        setIsLoading(false)
-        alert("Conta criada com sucesso!")
+    try {
+      const signupData: SignupData = {
+        name,
+        email,
+        password
+      }
+      
+      const result = await signup(signupData)
+      
+      if (result) {
+        setSuccessMessage(`Conta criada com sucesso! Bem-vindo(a), ${result.data.name}!`)
         
         // Limpa formulário
         setName("")
@@ -86,12 +70,12 @@ export function SignupScreen() {
         setPassword("")
         setConfirmPassword("")
         
-      } catch (error) {
-        console.error("Erro ao salvar conta:", error)
-        alert("Erro ao criar conta!")
-        setIsLoading(false)
+        // Remove mensagem de sucesso após 5 segundos
+        setTimeout(() => setSuccessMessage(""), 5000)
       }
-    }, 1500)
+    } catch (error) {
+      console.error("Erro ao criar conta:", error)
+    }
   }
 
   return (
@@ -102,6 +86,25 @@ export function SignupScreen() {
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold text-gray-900">Crie uma conta</h1>
           </div>
+
+          {/* Mensagens de feedback */}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+              <div className="flex justify-between items-center">
+                <span>{error}</span>
+                <button onClick={clearError} className="text-red-700 hover:text-red-900 font-bold">×</button>
+              </div>
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+              <div className="flex justify-between items-center">
+                <span>{successMessage}</span>
+                <button onClick={() => setSuccessMessage("")} className="text-green-700 hover:text-green-900 font-bold">×</button>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             
@@ -199,11 +202,30 @@ export function SignupScreen() {
             <Button 
               type="submit" 
               className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-medium py-2.5"
-              disabled={isLoading}
+              disabled={loading}
             >
-              {isLoading ? "Criando conta..." : "Criar Conta"}
+              {loading ? "Criando conta..." : "Criar Conta"}
             </Button>
           </form>
+
+          {/* Links de navegação */}
+          <div className="text-center space-y-3">
+            <p className="text-sm text-gray-600">
+              Já tem uma conta?{" "}
+              <Link href="/" className="text-cyan-600 hover:text-cyan-700 font-medium">
+                Faça login aqui
+              </Link>
+            </p>
+            
+            {successMessage && (
+              <Link 
+                href="/productRegister" 
+                className="block w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200"
+              >
+                Ir para Cadastro de Produtos
+              </Link>
+            )}
+          </div>
 
         </div>
       </div>
