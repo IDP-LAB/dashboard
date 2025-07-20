@@ -1,24 +1,13 @@
 import { Router } from '@/controllers/router.js'
 import { Auth } from '@/database/entity/Auth.js'
 import { repository } from '@/database/index.js'
+import { getCookieOptions } from '@/utils/cookie'
 import { timer } from '@/utils/timer.js'
 import jwt from 'jsonwebtoken'
 import moment from 'moment'
 import { z } from 'zod'
 
-/**
- * Returns cookie configuration options
- * @param expirationDate Cookie expiration date
- */
-const getCookieOptions = (expirationDate: Date) => ({
-  path: '/',
-  expires: expirationDate,
-  httpOnly: true,
-  secure: process.env.PRODUCTION,
-  domain: process.env.PRODUCTION ? process.env.FRONT_END_URL : undefined,
-})
-
-const router = new Router({
+export default new Router({
   name: 'User Authentication',
   description: 'Authenticate user credentials and issue JWT tokens for secure access',
   schema: {
@@ -90,5 +79,3 @@ const router = new Router({
     },
   }
 })
-
-export default router
