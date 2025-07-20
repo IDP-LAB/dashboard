@@ -44,3 +44,24 @@ export const timer = {
     return null
   }
 }
+
+/**
+ * Formata o tempo de atividade de segundos para uma string legível.
+ */
+export function formatUptime(seconds: number): string {
+  const dias = Math.floor(seconds / 86400)
+  seconds %= 86400
+  const horas = Math.floor(seconds / 3600)
+  seconds %= 3600
+  const minutos = Math.floor(seconds / 60)
+  const segundos = Math.floor(seconds % 60)
+
+  // Constrói a string final, adicionando as partes que não são zero.
+  const partes: string[] = []
+  if (dias > 0) partes.push(`${dias}d`)
+  if (horas > 0) partes.push(`${horas}h`)
+  if (minutos > 0) partes.push(`${minutos}m`)
+  if (segundos > 0 || partes.length === 0) partes.push(`${segundos}s`)
+
+  return partes.join(' ')
+}
