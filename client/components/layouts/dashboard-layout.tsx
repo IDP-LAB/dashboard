@@ -1,101 +1,50 @@
-"use client";
+import { AppSidebar } from "@/components/app-sidebar"
+import { NotificationCenter } from "@/components/ui/notification-center"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 
-import { ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "@/stores/auth";
-import { Button } from "@/components/ui/button";
-import { LogOut, Menu, Package } from "lucide-react";
-import { useState } from "react";
-
-interface DashboardLayoutProps {
-  children: ReactNode;
-}
-
-export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const router = useRouter();
-  const logout = useSession((state) => state.logout);
-  const user = useSession((state) => state.user);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-  };
-
-  const menuItems = [
-    { name: "Dashboard", href: "/dashboard", icon: "📊" },
-    { name: "Itens", href: "/dashboard/items", icon: "📦" },
-    { name: "Projetos", href: "/dashboard/projects", icon: "📁" },
-    { name: "Usuários", href: "/dashboard/users", icon: "👥" },
-    { name: "Relatórios", href: "/dashboard/reports", icon: "📈" },
-  ];
-
+/**
+ * Layout principal do dashboard
+ * Organiza a sidebar, header e área de conteúdo principal
+ * Agora com sistema de notificações integrado
+ */
+export function DashboardLayout({
+  children
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white">
-        <div className="flex h-16 items-center px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+    /* Container principal com largura total e altura mínima da tela */
+    <div className="flex min-h-screen w-full bg-background">
+      {/* Sidebar da aplicação */}
+      <AppSidebar />
 
-          <div className="flex items-center space-x-2 px-4">
-            <Package className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">Dashboard</h1>
+      {/* Área principal do conteúdo */}
+      <main className="flex-1 flex flex-col">
+        {/* Header fixo no topo com gradiente sutil */}
+        <header className="sticky top-0 z-10 flex h-[57px] items-center justify-between gap-1 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
+          {/* Lado esquerdo do header - trigger da sidebar e título */}
+          <div className="flex items-center gap-1">
+            {/* Botão para abrir/fechar sidebar (visível apenas em mobile) */}
+            <SidebarTrigger className="md:hidden hover:bg-accent transition-colors" />
+            {/* Título da aplicação (oculto em telas pequenas) */}
+            <h1 className="text-xl font-semibold ml-2 hidden sm:block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Maker Space Manager
+            </h1>
           </div>
 
-          <div className="ml-auto flex items-center space-x-4">
-            <span className="text-sm text-gray-600">
-              Olá, {user?.name || user?.username}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              title="Sair"
-            >
-              <LogOut className="h-5 w-5" />
-            </Button>
+          {/* Lado direito do header - notificações */}
+          <div className="flex items-center gap-2">
+            <NotificationCenter />
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside
-          className={`${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } fixed inset-y-0 left-0 z-40 w-64 transform bg-white shadow-lg transition-transform duration-300 ease-in-out lg:static lg:translate-x-0`}
-        >
-          <nav className="mt-16 space-y-1 px-2 lg:mt-0">
-            {menuItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="flex items-center space-x-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100"
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span>{item.name}</span>
-              </a>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Overlay para mobile */}
-        {isSidebarOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-        )}
-
-        {/* Main content */}
-        <main className="flex-1 p-6">{children}</main>
-      </div>
+        {/* Área de conteúdo com scroll */}
+        <ScrollArea className="flex-1 p-4 md:p-6">
+          {/* Container para garantir largura total do conteúdo */}
+          <div className="w-full animate-in">{children}</div>
+        </ScrollArea>
+      </main>
     </div>
-  );
+  )
 }

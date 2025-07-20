@@ -1,51 +1,48 @@
-import type React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { NotificationCenter } from "@/components/ui/notification-center"
+"use client"
 
-/**
- * Layout principal do dashboard
- * Organiza a sidebar, header e área de conteúdo principal
- * Agora com sistema de notificações integrado
- */
-export default function DashboardLayout({
+import { DashboardLayout } from "@/components/layouts/dashboard-layout"
+import BaseLoading from "@/components/loading/BaseLoading"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { useAPI } from "@/hooks/useAPI"
+import { isSuccessResponse } from "@/lib/response"
+import { SessionProvider } from "@/providers/session"
+import { useQuery } from "@tanstack/react-query"
+import Cookies from "js-cookie"
+import { redirect } from "next/navigation"
+
+export default function DashLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{ children: React.ReactNode }>) {
+  const { client } = useAPI()
+  const accessToken = Cookies.get('Bearer')
+  const refreshToken = Cookies.get('Refresh')
+  
+  if (accessToken) client.setAccessToken(accessToken)
+  if (refreshToken) client.setRefreshToken(refreshToken)
+
+  const { isLoading, isError } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const response = await client.query('/users/profile', 'get', undefined)
+
+      if (!isSuccessResponse(response)) throw new Error("Falha ao validar perfil.")
+      
+      return response.data
+    },
+    retry: false
+  })
+
+  if (isError) redirect('/auth/login')
+  if (isLoading) return <BaseLoading />
+
+
   return (
-    /* Container principal com largura total e altura mínima da tela */
-    <div className="flex min-h-screen w-full bg-background">
-      {/* Sidebar da aplicação */}
-      <AppSidebar />
-
-      {/* Área principal do conteúdo */}
-      <main className="flex-1 flex flex-col">
-        {/* Header fixo no topo com gradiente sutil */}
-        <header className="sticky top-0 z-10 flex h-[57px] items-center justify-between gap-1 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
-          {/* Lado esquerdo do header - trigger da sidebar e título */}
-          <div className="flex items-center gap-1">
-            {/* Botão para abrir/fechar sidebar (visível apenas em mobile) */}
-            <SidebarTrigger className="md:hidden hover:bg-accent transition-colors" />
-            {/* Título da aplicação (oculto em telas pequenas) */}
-            <h1 className="text-xl font-semibold ml-2 hidden sm:block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Maker Space Manager
-            </h1>
-          </div>
-
-          {/* Lado direito do header - notificações */}
-          <div className="flex items-center gap-2">
-            <NotificationCenter />
-          </div>
-        </header>
-
-        {/* Área de conteúdo com scroll */}
-        <ScrollArea className="flex-1 p-4 md:p-6">
-          {/* Container para garantir largura total do conteúdo */}
-          <div className="w-full animate-in">{children}</div>
-        </ScrollArea>
-      </main>
-    </div>
+    <SessionProvider>
+      <SidebarProvider>
+        <DashboardLayout>
+          {children}
+        </DashboardLayout>
+      </SidebarProvider>
+    </SessionProvider>
   )
 }

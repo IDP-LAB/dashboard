@@ -21,14 +21,12 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-        <SidebarProvider>
-          <QueryProvider>
-            <APIProvider>
-              {children}
-              <Toaster />
-            </APIProvider>
-          </QueryProvider>
-        </SidebarProvider>
+        <QueryProvider>
+          <APIProvider>
+            {children}
+            <Toaster />
+          </APIProvider>
+        </QueryProvider>
       </body>
     </html>
   );
