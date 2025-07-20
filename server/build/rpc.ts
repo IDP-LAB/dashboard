@@ -4,7 +4,6 @@ import type { Router } from '../src/controllers/router.js'
 import type APIRoot from '../routers/index.js'
 import type ConsumeItemByGroup from '../routers/item/consume.js'
 import type CreateItem from '../routers/item/create.js'
-import type CreateProduct from '../routers/products/create.js'
 import type CreateProject from '../routers/project/create.js'
 import type CreateUser from '../routers/users/create.js'
 import type DeleteItem from '../routers/item/$id/delete.js'
@@ -16,18 +15,15 @@ import type EditUser from '../routers/users/$id/edit.js'
 import type FindandTransferItem from '../routers/item/transfer.js'
 import type GetItem from '../routers/item/$id/get.js'
 import type GetProject from '../routers/project/$id/get.js'
-import type GetTags from '../routers/products/tags.js'
 import type GetUser from '../routers/users/$id/get.js'
 import type GetUserProfile from '../routers/users/profile.js'
 import type ListItems from '../routers/item/index.js'
-import type ListProducts from '../routers/products/index.js'
 import type ListProjects from '../routers/project/index.js'
 import type ListUsers from '../routers/users/index.js'
 import type ReturnItemByGroup from '../routers/item/return.js'
 import type TokenRefresh from '../routers/auth/refresh.js'
 import type UserAuthentication from '../routers/auth/login.js'
 import type UserLogout from '../routers/auth/logout.js'
-import type UserRegistration from '../routers/auth/signup.js'
 
 type MergeUnion<T> = (T extends any ? (x: T) => void : never) extends (x: infer R) => void ? { [K in keyof R]: R[K] }: never
 type UnwrapPromise<T> = T extends Promise<any> ? Awaited<T> : T
@@ -36,9 +32,9 @@ type FirstParameter<T> = T extends Router<infer First, any, any, any> ? First : 
 
 export type Routers = {
   '/': {
-    post: {
-      response: MergeUnion<UnwrapPromise<ReturnType<typeof APIRoot.methods.post>>>,
-      request: z.infer<NonNullable<typeof APIRoot.schema>['post']>,
+    get: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof APIRoot.methods.get>>>,
+      request: undefined,
       auth: undefined
     }
   },
@@ -60,13 +56,6 @@ export type Routers = {
     post: {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof TokenRefresh.methods.post>>>,
       request: undefined,
-      auth: undefined
-    }
-  },
-  '/auth/signup': {
-    post: {
-      response: MergeUnion<UnwrapPromise<ReturnType<typeof UserRegistration.methods.post>>>,
-      request: z.infer<NonNullable<typeof UserRegistration.schema>['post']>,
       auth: undefined
     }
   },
@@ -118,25 +107,6 @@ export type Routers = {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof FindandTransferItem.methods.post>>>,
       request: z.infer<NonNullable<typeof FindandTransferItem.schema>['post']>,
       auth: FirstParameter<typeof FindandTransferItem>
-    }
-  },
-  '/products': {
-    get: {
-      response: MergeUnion<UnwrapPromise<ReturnType<typeof ListProducts.methods.get>>>,
-      request: undefined,
-      auth: FirstParameter<typeof ListProducts>
-    },
-    post: {
-      response: MergeUnion<UnwrapPromise<ReturnType<typeof CreateProduct.methods.post>>>,
-      request: z.infer<NonNullable<typeof CreateProduct.schema>['post']>,
-      auth: FirstParameter<typeof CreateProduct>
-    }
-  },
-  '/products/tags': {
-    get: {
-      response: MergeUnion<UnwrapPromise<ReturnType<typeof GetTags.methods.get>>>,
-      request: undefined,
-      auth: FirstParameter<typeof GetTags>
     }
   },
   '/project': {

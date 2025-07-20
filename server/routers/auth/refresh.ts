@@ -2,21 +2,10 @@ import { Router } from '@/controllers/router.js'
 import { Auth } from '@/database/entity/Auth.js'
 import { authTreeRepository } from '@/database/index.js'
 import { type JWTData } from '@/types/jwt.js'
+import { getCookieOptions } from '@/utils/cookie'
 import { timer } from '@/utils/timer.js'
 import jwt from 'jsonwebtoken'
 import moment from 'moment'
-
-/**
- * Returns cookie configuration options
- * @param expirationDate Cookie expiration date
- */
-const getCookieOptions = (expirationDate: Date) => ({
-  path: '/',
-  expires: expirationDate,
-  httpOnly: true,
-  secure: process.env.PRODUCTION,
-  domain: process.env.PRODUCTION ? process.env.FRONT_END_URL : undefined,
-})
 
 export default new Router({
   name: 'Token Refresh',

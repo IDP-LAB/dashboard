@@ -7,7 +7,7 @@
   "type": "module",
   "private": "true",
   "scripts": {
-    "dev": "bun src/build.ts && bun run --inspect=ws://localhost:6499 src/app.ts",
+    "dev": "bun src/build.ts && bun run --inspect=ws://localhost:6500 src/app.ts",
     "start": "bun src/build.ts && bun --watch src/cluster.ts",
     "lint": "eslint -c eslint.config.js",
     "typeorm": "typeorm-ts-node-esm -d ./src/database/dataSource.ts",

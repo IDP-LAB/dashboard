@@ -42,7 +42,7 @@ export default new Router({
       await item.remove()
 
       return reply.code(200).send({
-        message: 'Project deleted successfully',
+        message: 'Item deleted successfully',
         data: item
       })
     }

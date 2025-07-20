@@ -1,5 +1,4 @@
 import 'dotenv/config'
-import mysql from 'mysql2/promise'
 import { dirname, join } from 'path'
 import { DataSource } from 'typeorm'
 import { fileURLToPath } from 'url'
@@ -13,19 +12,7 @@ async function getDatabase(database: 'mysql' | 'sqljs' = 'sqljs') {
     const port = Number(process.env.DATABASE_PORT || 3306)
     const username = String(process.env.DATABASE_USERNAME || 'root')
     const password = String(process.env.DATABASE_PASSWORD || '')
-    const dbName = String(process.env.DATABASE_NAME || 'posto')
-
-    const rootSource = await mysql.createConnection({
-      host,
-      port,
-      user: username,
-      password
-    })
-      
-    await rootSource.query(`CREATE DATABASE IF NOT EXISTS ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`)
-    await rootSource.query(`GRANT ALL PRIVILEGES ON ${dbName}.* TO '${username}'@'%' IDENTIFIED BY '${password}';`)
-    await rootSource.query('FLUSH PRIVILEGES;')
-    await rootSource.end()
+    const database = String(process.env.DATABASE_NAME || '')
 
     return {
       type: 'mysql' as const,
@@ -33,7 +20,7 @@ async function getDatabase(database: 'mysql' | 'sqljs' = 'sqljs') {
       port,
       username,
       password,
-      database: dbName,
+      database,
       charset: 'utf8mb4',
     }
   }
