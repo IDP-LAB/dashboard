@@ -63,13 +63,6 @@ export type Routers = {
       auth: undefined
     }
   },
-  '/auth/signup': {
-    post: {
-      response: MergeUnion<UnwrapPromise<ReturnType<typeof UserRegistration.methods.post>>>,
-      request: z.infer<NonNullable<typeof UserRegistration.schema>['post']>,
-      auth: undefined
-    }
-  },
   '/item': {
     get: {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof ListItems.methods.get>>>,

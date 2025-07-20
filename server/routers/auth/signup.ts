@@ -3,7 +3,7 @@ import { User } from '@/database/entity/User'
 import { Role } from '@/database/enums'
 import z from 'zod'
 
-export default new Router({
+export const route = new Router({
   schema: {
     post: z.object({
       name: z.string().min(4).max(64),
