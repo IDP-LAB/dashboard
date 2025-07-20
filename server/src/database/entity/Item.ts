@@ -69,7 +69,10 @@ export class Item extends BaseEntity {
    * Este método deve ser chamado ANTES de salvar o item.
    */
   async findAndSetGroup(): Promise<void> {
-    if (!this.category || !this.tags) { this.groupUuid = nanoid(); return }
+    if (!this.category || !this.tags) {
+      this.groupUuid = nanoid()
+      return
+    }
 
     const tagIds = this.tags.map(tag => tag.id).sort()
 

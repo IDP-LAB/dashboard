@@ -20,9 +20,6 @@ export default new Router({
     async put({ reply, request, schema }) {
       const params = request.params as { id: string }
       const itemId = Number(params.id)
-
-      console.log(request.user)
-
       const [permission, item] = await hasItemPermission({
         userId: request.user.id,
         isAdmin: request.user.role === Role.Administrator,

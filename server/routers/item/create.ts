@@ -38,9 +38,7 @@ export default new Router({
         if (!category) return reply.code(404).send({ message: `Categoria com ID ${schema.category.id} não encontrada.` })
       } else if (schema.category.name) {
         category = await ItemCategory.findOneBy({ name: schema.category.name })
-        if (!category) {
-          category = await ItemCategory.create({ name: schema.category.name }).save()
-        }
+        if (!category) category = await ItemCategory.create({ name: schema.category.name }).save()
       }
       
       const tags: ItemTag[] = []

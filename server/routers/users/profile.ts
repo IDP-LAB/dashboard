@@ -12,11 +12,9 @@ export default new Router({
         where: { id: request.user.id }
       })
 
-      if (!user) {
-        return reply.status(404).send({
-          message: 'User not found'
-        })
-      }
+      if (!user) return reply.status(404).send({
+        message: 'User not found'
+      })
 
       return reply.code(200).send({
         message: 'Profile retrieved successfully',

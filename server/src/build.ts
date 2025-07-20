@@ -30,8 +30,7 @@ class Build {
   private routerDetailsList: RouterDetails[] = []
 
   private async loadRouters() {
-    const files = await glob('**/*.ts', { cwd: this.basePath, absolute: true })
-    files.sort() // Sort by absolute file path for consistent processing order
+    const files = (await glob('**/*.ts', { cwd: this.basePath, absolute: true })).sort()
 
     for (const absoluteFilePath of files) {
       const relativeFilePathToRoutersDir = relative(this.basePath, absoluteFilePath)

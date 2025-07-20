@@ -16,7 +16,6 @@ export default new Router({
       const pageSize = Math.max(1, Number(query.pageSize) || 1)
       const interval = ['month', 'day', 'hour', 'none'].includes(query.interval ?? '') ? query.interval as string : 'none'
 
-      console.log(query)
       const paginated = await paginate({
         repository: repository.user,
         page,
