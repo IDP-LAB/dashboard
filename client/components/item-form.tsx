@@ -14,11 +14,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import type { Item, ItemType, EquipmentStatus, Category } from "@/lib/types"
 import { mockCategories } from "@/lib/data" // Mock categories
 import { useToast } from "@/components/ui/use-toast"
-import { CalendarIcon, UploadCloud } from "lucide-react"
+import { CalendarIcon, UploadCloud, Loader2 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { useAPI } from "@/hooks/useAPI"
+import { isSuccessResponse } from "@/lib/response"
 
 interface ItemFormProps {
   item?: Item // For editing
@@ -27,6 +29,8 @@ interface ItemFormProps {
 export function ItemForm({ item }: ItemFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { client } = useAPI()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [name, setName] = useState(item?.name || "")
   const [type, setType] = useState<ItemType>(item?.type || "equipment")
   const [selectedCategory, setSelectedCategory] = useState(item?.category || "")
@@ -47,27 +51,59 @@ export function ItemForm({ item }: ItemFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement actual form submission logic (e.g., API call)
-    console.log({
-      name,
-      type,
-      category: selectedCategory,
-      description,
-      serialNumber,
-      brand,
-      model,
-      acquisitionDate: acquisitionDate ? format(acquisitionDate, "yyyy-MM-dd") : undefined,
-      value: Number(value),
-      location,
-      status,
-      minStockLevel: Number(minStockLevel),
-      currentStock: Number(currentStock),
-    })
-    toast({
-      title: item ? "Item Atualizado!" : "Item Criado!",
-      description: `O item "${name}" foi ${item ? "atualizado" : "criado"} com sucesso.`,
-    })
-    router.push("/dashboard/items") // Redirect after submission
+    try {
+      setIsSubmitting(true)
+      
+      // Preparar os dados do formulário
+      const formData = {
+        name,
+        type,
+        category: selectedCategory,
+        description,
+        serialNumber: type === "equipment" ? serialNumber : undefined,
+        brand: type === "equipment" ? brand : undefined,
+        model: type === "equipment" ? model : undefined,
+        acquisitionDate: acquisitionDate ? format(acquisitionDate, "yyyy-MM-dd") : undefined,
+        value: value ? Number(value) : undefined,
+        location: type === "equipment" ? location : undefined,
+        status: type === "equipment" ? status : undefined,
+        minStockLevel: type === "consumable" ? Number(minStockLevel) : undefined,
+        currentStock: type === "consumable" ? Number(currentStock) : undefined,
+      }
+
+      // Log para debug
+      console.log("Enviando dados do formulário:", formData)
+      
+      if (item) {
+        // Atualizar item existente
+        const response = await client.query(`/item/${item.id}`, "put", formData);
+        if (!('data' in response)) {
+          throw new Error(response.message);
+        }
+      } else {
+        // Criar novo item
+        const response = await client.query("/item/create", "post", formData);
+        if (!('data' in response)) {
+          throw new Error(response.message);
+        }
+      }
+      
+      toast({
+        title: item ? "Item Atualizado!" : "Item Criado!",
+        description: `O item "${name}" foi ${item ? "atualizado" : "criado"} com sucesso.`,
+      })
+      
+      router.push("/dashboard/items") // Redirecionar após o envio
+    } catch (error) {
+      console.error("Erro ao enviar formulário:", error)
+      toast({
+        title: "Erro",
+        description: `Falha ao ${item ? "atualizar" : "criar"} o item. ${error instanceof Error ? error.message : 'Tente novamente mais tarde.'}`,
+        variant: "destructive"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -294,10 +330,23 @@ export function ItemForm({ item }: ItemFormProps) {
           </div>
         </CardContent>
         <CardFooter className="border-t pt-6">
-          <Button type="submit" className="w-full md:w-auto">
-            {item ? "Salvar Alterações" : "Adicionar Item"}
+          <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {item ? "Salvando..." : "Adicionando..."}
+              </>
+            ) : (
+              item ? "Salvar Alterações" : "Adicionar Item"
+            )}
           </Button>
-          <Button variant="outline" type="button" onClick={() => router.back()} className="ml-auto w-full md:w-auto">
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={() => router.back()} 
+            className="ml-auto w-full md:w-auto"
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
         </CardFooter>

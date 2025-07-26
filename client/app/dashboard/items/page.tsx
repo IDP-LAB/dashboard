@@ -42,9 +42,10 @@ export default function ItemsPage() {
       const response = await client.query("/item", "get", {
         page: 1,
         pageSize: 20,
+        search: search.length > 0 ? search : undefined,
       });
 
-      if (response.isSuccess()) {
+      if ('data' in response) {
         return response.data;
       } else {
         throw new Error(response.message);
@@ -52,6 +53,10 @@ export default function ItemsPage() {
     },
     enabled: isAuthenticated,
   });
+  
+  const handleNewItem = () => {
+    router.push("/dashboard/items/new");
+  };
 
   return (
     <div className="space-y-6">
@@ -62,7 +67,7 @@ export default function ItemsPage() {
             Gerencie os itens do estoque
           </p>
         </div>
-        <Button>
+        <Button onClick={handleNewItem}>
           <Plus className="mr-2 h-4 w-4" />
           Novo Item
         </Button>
