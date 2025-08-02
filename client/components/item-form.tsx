@@ -1,99 +1,116 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Item, ItemType, EquipmentStatus, Category } from "@/lib/types"
-import { mockCategories } from "@/lib/data" // Mock categories
 import { useToast } from "@/components/ui/use-toast"
-import { CalendarIcon, UploadCloud, Loader2 } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
+import { CalendarIcon, Loader2, UploadCloud } from "lucide-react"
+
 import { useAPI } from "@/hooks/useAPI"
+import { mockCategories } from "@/lib/data"; // Mock categories
 import { isSuccessResponse } from "@/lib/response"
+import { ItemStatus, ItemType, type ItemProperties,  } from "server"; // Adapte conforme sua estrutura
+import { InputNumber } from "./ui/inputnumber"
 
-interface ItemFormProps {
-  item?: Item // For editing
-}
+// Defina um schema de validação com Zod
+const formSchema = z.object({
+  name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
+  type: z.nativeEnum(ItemType),
+  category: z.object({
+    id: z.number(),
+    name: z.string(),
+  }),
+  description: z.string().optional(),
+  acquisitionAt: z.date().optional(),
+  price: z.number().optional(),
+  quantity: z.number().positive().min(1),
+  location: z.string().optional(),
+  status: z.nativeEnum(ItemStatus),
+  minStockLevel: z.number().optional(),
+  currentStock: z.number().optional(),
+})
 
-export function ItemForm({ item }: ItemFormProps) {
+export function ItemForm({ item }: {
+  item?: ItemProperties
+}) {
   const router = useRouter()
   const { toast } = useToast()
   const { client } = useAPI()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [name, setName] = useState(item?.name || "")
-  const [type, setType] = useState<ItemType>(item?.type || "equipment")
-  const [selectedCategory, setSelectedCategory] = useState(item?.category || "")
-  const [description, setDescription] = useState(item?.description || "")
-  const [serialNumber, setSerialNumber] = useState(item?.serialNumber || "")
-  const [brand, setBrand] = useState(item?.brand || "")
-  const [model, setModel] = useState(item?.model || "")
-  const [acquisitionDate, setAcquisitionDate] = useState<Date | undefined>(
-    item?.acquisitionDate ? new Date(item.acquisitionDate) : undefined,
-  )
-  const [value, setValue] = useState<number | string>(item?.value || "")
-  const [location, setLocation] = useState(item?.location || "")
-  const [status, setStatus] = useState<EquipmentStatus | undefined>(item?.status)
-  const [minStockLevel, setMinStockLevel] = useState<number | string>(item?.minStockLevel || "")
-  const [currentStock, setCurrentStock] = useState<number | string>(item?.currentStock || "")
 
-  const categories: Category[] = mockCategories // Use mock categories
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: item?.name || "",
+      type: item?.type || ItemType.Equipment,
+      category: item?.category,
+      description: item?.description || "",
+      acquisitionAt: item?.acquisitionAt ? new Date(item.acquisitionAt) : undefined,
+      price: item?.price || undefined,
+      location: item?.location || "",
+      status: item?.status,
+      quantity: 1
+      // Adapte os campos de estoque conforme sua 'ItemProperties'
+      // minStockLevel: item?.minStockLevel || undefined,
+      // currentStock: item?.currentStock || undefined,
+    },
+  })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const { formState: { isSubmitting }, watch } = form
+  const itemType = watch("type") // Observa o campo 'type' para renderização condicional
+
+  const categories = mockCategories // Use suas categorias
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      setIsSubmitting(true)
-      
-      // Preparar os dados do formulário
       const formData = {
-        name,
-        type,
-        category: selectedCategory,
-        description,
-        serialNumber: type === "equipment" ? serialNumber : undefined,
-        brand: type === "equipment" ? brand : undefined,
-        model: type === "equipment" ? model : undefined,
-        acquisitionDate: acquisitionDate ? format(acquisitionDate, "yyyy-MM-dd") : undefined,
-        value: value ? Number(value) : undefined,
-        location: type === "equipment" ? location : undefined,
-        status: type === "equipment" ? status : undefined,
-        minStockLevel: type === "consumable" ? Number(minStockLevel) : undefined,
-        currentStock: type === "consumable" ? Number(currentStock) : undefined,
+        ...values,
+        acquisitionAt: values.acquisitionAt ? format(values.acquisitionAt, "yyyy-MM-dd") : undefined,
       }
 
-      // Log para debug
       console.log("Enviando dados do formulário:", formData)
-      
+
+      const changedData = {
+        name: formData.name,
+        type: formData.type,
+        status: formData.status ?? undefined,
+        price: formData.price ?? undefined,
+        category: formData.category,
+        quantity: formData.quantity,
+        description: formData.description,
+        location: formData.location,
+      }
+
       if (item) {
         // Atualizar item existente
-        const response = await client.query(`/item/${item.id}`, "put", formData);
-        if (!('data' in response)) {
-          throw new Error(response.message);
-        }
+        const response = await client.query(`/item/:id`, "put", { id: item.id }, changedData);
+        if (!isSuccessResponse(response)) throw new Error(response.message);
       } else {
         // Criar novo item
-        const response = await client.query("/item/create", "post", formData);
-        if (!('data' in response)) {
-          throw new Error(response.message);
-        }
+        const response = await client.query("/item", "post", changedData);
+        if (!isSuccessResponse(response)) throw new Error(response.message);
       }
-      
+
       toast({
         title: item ? "Item Atualizado!" : "Item Criado!",
-        description: `O item "${name}" foi ${item ? "atualizado" : "criado"} com sucesso.`,
+        description: `O item "${values.name}" foi ${item ? "atualizado" : "criado"} com sucesso.`,
       })
-      
+
       router.push("/dashboard/items") // Redirecionar após o envio
+      router.refresh() // Opcional: para recarregar os dados na página de destino
     } catch (error) {
       console.error("Erro ao enviar formulário:", error)
       toast({
@@ -101,256 +118,328 @@ export function ItemForm({ item }: ItemFormProps) {
         description: `Falha ao ${item ? "atualizar" : "criar"} o item. ${error instanceof Error ? error.message : 'Tente novamente mais tarde.'}`,
         variant: "destructive"
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{item ? "Editar Item" : "Adicionar Novo Item"}</CardTitle>
-          <CardDescription>Preencha os detalhes do equipamento ou insumo.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome do Item</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Impressora 3D XYZ"
-                required
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{item ? "Editar Item" : "Adicionar Novo Item"}</CardTitle>
+            <CardDescription>Preencha os detalhes do equipamento ou insumo.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Item</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Impressora 3D XYZ" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel>Tipo</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex space-x-4 pt-2"
+                      >
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <RadioGroupItem value="equipment" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Equipamento</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <RadioGroupItem value="consumable" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Insumo</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Tipo</Label>
-              <RadioGroup
-                value={type}
-                onValueChange={(value) => setType(value as ItemType)}
-                className="flex space-x-4 pt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="equipment" id="equipment" />
-                  <Label htmlFor="equipment">Equipamento</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="consumable" id="consumable" />
-                  <Label htmlFor="consumable">Insumo</Label>
-                </div>
-              </RadioGroup>
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory} required>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detalhes sobre o item..."
-            />
-          </div>
-
-          {type === "equipment" && (
-            <>
-              <h3 className="text-lg font-medium border-t pt-4">Detalhes do Equipamento</h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="serialNumber">Número de Série</Label>
-                  <Input
-                    id="serialNumber"
-                    value={serialNumber}
-                    onChange={(e) => setSerialNumber(e.target.value)}
-                    placeholder="S/N"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="brand">Marca</Label>
-                  <Input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Fabricante" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="model">Modelo</Label>
-                  <Input
-                    id="model"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    placeholder="Modelo específico"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="acquisitionDate">Data de Aquisição</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={`w-full justify-start text-left font-normal ${!acquisitionDate && "text-muted-foreground"}`}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {acquisitionDate ? (
-                          format(acquisitionDate, "PPP", { locale: ptBR })
-                        ) : (
-                          <span>Escolha uma data</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={acquisitionDate}
-                        onSelect={setAcquisitionDate}
-                        initialFocus
-                        locale={ptBR}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="value">Valor (R$)</Label>
-                  <Input
-                    id="value"
-                    type="number"
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Localização Física</Label>
-                  <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Ex: Bancada A1, Prateleira B2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={status} onValueChange={(value) => setStatus(value as EquipmentStatus)}>
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Categoria</FormLabel>
+                  <Select onValueChange={(value) => field.onChange(JSON.parse(value))} defaultValue={JSON.stringify(field.value)}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma categoria" />
+                      </SelectTrigger>
+                    </FormControl>
                     <SelectContent>
-                      <SelectItem value="functional">Funcional</SelectItem>
-                      <SelectItem value="in_maintenance">Em Manutenção</SelectItem>
-                      <SelectItem value="out_of_use">Fora de Uso</SelectItem>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={JSON.stringify(cat)}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-            </>
-          )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {type === "consumable" && (
-            <>
-              <h3 className="text-lg font-medium border-t pt-4">Detalhes do Insumo</h3>
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Detalhes sobre o item..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quantidade</FormLabel>
+                  <FormControl>
+                    <InputNumber
+                      placeholder="Quantidade de itens..."
+                      positive
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <h3 className="text-lg font-medium border-t pt-4">Detalhes do Equipamento</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="acquisitionAt"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Aquisição</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Escolha uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor (R$)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={event => field.onChange(+event.target.value)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Localização Física</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Bancada A1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="available">Disponível</SelectItem>
+                        <SelectItem value="maintenance">Em Manutenção</SelectItem>
+                        <SelectItem value="in_use">Em Uso</SelectItem>
+                        <SelectItem value="consumed">Consumido</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {itemType === "consumable" && (
+                <>
+                <h3 className="text-lg font-medium border-t pt-4">Detalhes do Insumo</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                    <FormField
+                    control={form.control}
+                    name="minStockLevel"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nível Mínimo de Estoque</FormLabel>
+                        <FormControl>
+                            <Input
+                            type="number"
+                            placeholder="Ex: 5"
+                            {...field}
+                            onChange={event => field.onChange(+event.target.value)}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="currentStock"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Estoque Atual</FormLabel>
+                        <FormControl>
+                            <Input
+                            type="number"
+                            placeholder="Ex: 10"
+                            {...field}
+                            onChange={event => field.onChange(+event.target.value)}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+                </>
+            )}
+
+            {/* Campos de Upload - A lógica de upload de arquivos deve ser implementada separadamente */}
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="text-lg font-medium">Mídia e Documentação</h3>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="minStockLevel">Nível Mínimo de Estoque</Label>
-                  <Input
-                    id="minStockLevel"
-                    type="number"
-                    value={minStockLevel}
-                    onChange={(e) => setMinStockLevel(e.target.value)}
-                    placeholder="Ex: 5"
-                  />
+                  <Label htmlFor="photos">Fotos do Item</Label>
+                  <div className="flex items-center justify-center w-full">
+                    <Label
+                      htmlFor="photos-input"
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="mb-1 text-sm text-muted-foreground">
+                          <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                        </p>
+                        <p className="text-xs text-muted-foreground">SVG, PNG, JPG ou GIF</p>
+                      </div>
+                      <Input id="photos-input" type="file" className="hidden" multiple />
+                    </Label>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="currentStock">Estoque Atual</Label>
-                  <Input
-                    id="currentStock"
-                    type="number"
-                    value={currentStock}
-                    onChange={(e) => setCurrentStock(e.target.value)}
-                    placeholder="Ex: 10"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="space-y-4 border-t pt-4">
-            <h3 className="text-lg font-medium">Mídia e Documentação</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="photos">Fotos do Item</Label>
-                <div className="flex items-center justify-center w-full">
-                  <Label
-                    htmlFor="photos-input"
-                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80"
-                  >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                      <p className="mb-1 text-sm text-muted-foreground">
-                        <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                      </p>
-                      <p className="text-xs text-muted-foreground">SVG, PNG, JPG ou GIF (MAX. 800x400px)</p>
-                    </div>
-                    <Input id="photos-input" type="file" className="hidden" multiple />
-                  </Label>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="documentation">Documentação Técnica</Label>
-                <div className="flex items-center justify-center w-full">
-                  <Label
-                    htmlFor="docs-input"
-                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80"
-                  >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                      <p className="mb-1 text-sm text-muted-foreground">
-                        <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                      </p>
-                      <p className="text-xs text-muted-foreground">PDF, DOCX, TXT (MAX. 5MB)</p>
-                    </div>
-                    <Input id="docs-input" type="file" className="hidden" multiple />
-                  </Label>
+                  <Label htmlFor="documentation">Documentação Técnica</Label>
+                  <div className="flex items-center justify-center w-full">
+                    <Label
+                      htmlFor="docs-input"
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="mb-1 text-sm text-muted-foreground">
+                          <span className="font-semibold">Clique para enviar</span> ou arraste e solte
+                        </p>
+                        <p className="text-xs text-muted-foreground">PDF, DOCX, TXT</p>
+                      </div>
+                      <Input id="docs-input" type="file" className="hidden" multiple />
+                    </Label>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-        <CardFooter className="border-t pt-6">
-          <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {item ? "Salvando..." : "Adicionando..."}
-              </>
-            ) : (
-              item ? "Salvar Alterações" : "Adicionar Item"
-            )}
-          </Button>
-          <Button 
-            variant="outline" 
-            type="button" 
-            onClick={() => router.back()} 
-            className="ml-auto w-full md:w-auto"
-            disabled={isSubmitting}
-          >
-            Cancelar
-          </Button>
-        </CardFooter>
-      </Card>
-    </form>
+          </CardContent>
+          <CardFooter className="border-t pt-6">
+            <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {item ? "Salvando..." : "Adicionando..."}
+                </>
+              ) : (
+                item ? "Salvar Alterações" : "Adicionar Item"
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => router.back()}
+              className="ml-auto w-full md:w-auto"
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
+    </Form>
   )
 }

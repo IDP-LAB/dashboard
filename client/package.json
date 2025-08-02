@@ -50,6 +50,7 @@
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.454.0",
     "rpc": "workspace:../packages/rpc",
+    "server": "workspace:../server",
     "next": "14.2.16",
     "next-themes": "latest",
     "react": "18.2.0",

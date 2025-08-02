@@ -1,23 +1,25 @@
-// Esta página seria para carregar o item específico e passá-lo para o ItemForm.
-// Por enquanto, vamos simular que o item é carregado.
-import { ItemForm } from "@/components/item-form"
-import { mockItems } from "@/lib/data" // Usando dados mocados
+"use client"
 
-// No Next.js real, você usaria params para buscar o item.
-// export default async function EditItemPage({ params }: { params: { id: string } }) {
-// const item = await fetchItemById(params.id); // Função para buscar o item
+import { ItemForm } from "@/components/item-form"
+import { useAPI } from "@/hooks/useAPI"
+import { isSuccessResponse } from "@/lib/response"
+import { useQuery } from "@tanstack/react-query"
 
 export default function EditItemPage({ params }: { params: { id: string } }) {
-  // Simulação de busca de item
-  const item = mockItems.find((i) => i.id === params.id)
+  const { client } = useAPI()
+  const { data, isFetching } = useQuery({
+    queryKey: ['item', params.id],
+    queryFn: async () => await client.query('/item/:id', 'get', {
+      id: params.id
+    }, undefined)
+  })
 
-  if (!item) {
-    return <div className="text-center py-10">Item não encontrado.</div>
-  }
+  if (isFetching) return <p>Carregando...</p>
+  if (!isSuccessResponse(data)) throw new Error(data?.message)
 
   return (
     <div className="max-w-4xl mx-auto">
-      <ItemForm item={item} />
+      <ItemForm item={data.data} />
     </div>
   )
 }

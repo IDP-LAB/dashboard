@@ -17,8 +17,6 @@ export class Item extends BaseEntity {
   @Column({ type: 'varchar' })
     name!: string
   @Column({ type: 'varchar', nullable: true })
-    barcode?: string
-  @Column({ type: 'varchar', nullable: true })
     description!: string
   @Column({ type: 'varchar', nullable: true })
     location!: string
