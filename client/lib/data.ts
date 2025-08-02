@@ -1,4 +1,3 @@
-import type { Item, Category, StockTransaction, Project, Maintenance, User } from "./types"
 
 /**
  * Dados mockados para desenvolvimento e testes
@@ -9,24 +8,24 @@ import type { Item, Category, StockTransaction, Project, Maintenance, User } fro
  * Categorias de itens disponíveis no sistema
  * Organizam os itens em grupos lógicos para facilitar a navegação
  */
-export const mockCategories: Category[] = [
-  { id: "cat1", name: "Impressão 3D" },
-  { id: "cat2", name: "Eletrônica" },
-  { id: "cat3", name: "Mecânica CNC" },
-  { id: "cat4", name: "Ferramentas Manuais" },
-  { id: "cat5", name: "Materiais Diversos" },
+export const mockCategories = [
+  { id: 1, name: "Impressão 3D" },
+  { id: 2, name: "Eletrônica" },
+  { id: 3, name: "Mecânica CNC" },
+  { id: 4, name: "Ferramentas Manuais" },
+  { id: 5, name: "Materiais Diversos" },
 ]
 
 /**
  * Usuários do sistema com diferentes papéis
  * Inclui administradores, usuários comuns e técnicos
  */
-export const mockUsers: User[] = [
-  { id: "user1", name: "João Silva", email: "joao@makerspace.com", role: "admin" },
-  { id: "user2", name: "Maria Santos", email: "maria@makerspace.com", role: "user" },
-  { id: "user3", name: "Pedro Costa", email: "pedro@makerspace.com", role: "user" },
-  { id: "user4", name: "Ana Oliveira", email: "ana@makerspace.com", role: "user" },
-  { id: "user5", name: "Carlos Lima", email: "carlos@makerspace.com", role: "technician" },
+export const mockUsers = [
+  { id: 1, name: "João Silva", email: "joao@makerspace.com", role: "admin" },
+  { id: 2, name: "Maria Santos", email: "maria@makerspace.com", role: "user" },
+  { id: 3, name: "Pedro Costa", email: "pedro@makerspace.com", role: "user" },
+  { id: 4, name: "Ana Oliveira", email: "ana@makerspace.com", role: "user" },
+  { id: 5, name: "Carlos Lima", email: "carlos@makerspace.com", role: "technician" },
 ]
 
 /**

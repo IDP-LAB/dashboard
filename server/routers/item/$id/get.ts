@@ -18,13 +18,13 @@ export default new Router({
         itemId,
         requiredPermission: PERMISSIONS.VIEWER,
       })
+      
+      if (!item) return reply.status(404).send({
+        message: `Item with ID ${params.id} not found`
+      })
 
       if (!permission) return reply.code(403).send({
         message: 'You do not have sufficient permission!'
-      })
-
-      if (!item) return reply.status(404).send({
-        message: `Item with ID ${params.id} not found`
       })
 
       return reply.code(200).send({

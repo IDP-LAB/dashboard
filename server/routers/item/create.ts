@@ -6,7 +6,7 @@ import { ItemStatus, ItemType } from '@/database/enums'
 import { z } from 'zod'
 
 // garante que 'id' ou 'name' seja fornecido
-const idOrNameSchema = z.object({
+export const idOrNameSchema = z.object({
   id: z.number().min(1).optional(),
   name: z.string().min(2).max(64).optional(),
 }).refine(data => data.id || data.name, {
@@ -20,14 +20,15 @@ export default new Router({
   authenticate: true,
   schema: {
     post: z.object({
-      name: z.string().min(4).max(64),
-      description: z.string().min(4).max(512).optional(),
-      location: z.string().min(4).max(256).optional(),
+      name: z.string().max(256),
+      description: z.string().max(2048).optional(),
+      location: z.string().max(256).optional(),
       price: z.number().positive().optional(),
-      type: z.nativeEnum(ItemType).default(ItemType.Consumable),
+      type: z.nativeEnum(ItemType).optional().default(ItemType.Consumable),
+      status: z.nativeEnum(ItemStatus).optional().default(ItemStatus.Available),
+      quantity: z.number().int().min(1).default(1),
       category: idOrNameSchema,
       tags: z.array(idOrNameSchema).optional(),
-      quantity: z.number().int().min(1).default(1),
     })
   },
   methods: {
@@ -72,7 +73,6 @@ export default new Router({
         items.push({
           ...schema,
           groupUuid,
-          status: ItemStatus.Available,
           category: category ?? undefined,
           tags,
         })
