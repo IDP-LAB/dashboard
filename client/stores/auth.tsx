@@ -54,7 +54,7 @@ export const useSession = create<AuthState>((set) => ({
     Cookies.remove('Bearer')
     Cookies.remove('Refresh')
     set({ user: null, accessToken: null, isLoading: false })
-    redirect('/login')
+    redirect('/auth/login')
   },
 
   checkAuthStatus: () => {

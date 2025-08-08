@@ -19,7 +19,17 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <ItemForm item={data.data} />
+      <ItemForm
+        item={data.data}
+        hideName
+        hideType
+        hideCategory
+        hideTags
+        hideDescription
+        hideConsumableDetails
+        hideQuantity
+        hideMediaSection
+      />
     </div>
   )
 }

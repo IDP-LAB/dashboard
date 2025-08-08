@@ -15,7 +15,7 @@ export default new Router({
   authenticate: true,
   schema: {
     post: z.object({
-      itemGroupUuid: z.string().length(21),
+      itemGroupUuid: z.string(),
       projectId: z.number().min(1),
       notes: z.string().optional()
     })
@@ -37,12 +37,12 @@ export default new Router({
           // Encontra um item consumível do grupo que está em uso pelo projeto
           const itemToConsume = await tm.getRepository(Item).findOne({
             where: {
-              groupUuid: schema.itemGroupUuid,
+              group: { id: schema.itemGroupUuid },
               project: { id: schema.projectId },
               status: ItemStatus.InUse,
               type: ItemType.Consumable,
             },
-            relations: { project: true },
+            relations: { project: true, group: true },
             ...getLockingOptions()
           })
 

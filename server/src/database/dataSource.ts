@@ -35,9 +35,14 @@ async function getDatabase(database: 'mysql' | 'sqljs' = 'sqljs') {
   }
 }
 
+const databaseType = (process.env.DATABASE_TYPE as 'mysql' | 'sqljs' | undefined) ?? 'sqljs'
+
 export default new DataSource({
-  ...(await getDatabase(process.env.DATABASE_TYPE as 'mysql' | 'sqljs' | undefined)),
-  synchronize: true,
+  ...(await getDatabase(databaseType)),
+  // Use sync only for embedded SQLite/SQL.js in dev; never for MySQL
+  synchronize: databaseType !== 'mysql',
+  // Auto-run migrations when using MySQL in runtime, to avoid manual steps
+  migrationsRun: databaseType === 'mysql',
   // logging: true,
   entities: [join(path, 'entity', '**', '*.{js,ts}')],
   migrations: [join(path, 'migration', '**', '*.{js,ts}')],

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   Sidebar,
   SidebarContent,
@@ -46,6 +46,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import React from "react"
 import { usePreferences } from "@/lib/store"
+import { useAPI } from "@/hooks/useAPI"
 
 /**
  * Itens de navegação principal da sidebar
@@ -54,20 +55,20 @@ import { usePreferences } from "@/lib/store"
 const mainNavItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Itens", href: "/dashboard/items", icon: Box },
-  { title: "Estoque", href: "/dashboard/stock", icon: Warehouse },
-  { title: "Manutenção", href: "/dashboard/maintenance", icon: Wrench },
-  { title: "Projetos", href: "/dashboard/projects", icon: ClipboardList },
-  { title: "Relatórios", href: "/dashboard/reports", icon: BarChart3 },
+  // { title: "Estoque", href: "/dashboard/stock", icon: Warehouse },
+  //{ title: "Manutenção", href: "/dashboard/maintenance", icon: Wrench },
+  //{ title: "Projetos", href: "/dashboard/projects", icon: ClipboardList },
+  //{ title: "Relatórios", href: "/dashboard/reports", icon: BarChart3 },
 ]
 
 /**
  * Itens de navegação das configurações
  * Organizados em uma seção separada e colapsível
  */
-const settingsNavItems = [
-  { title: "Usuários", href: "/dashboard/settings/users", icon: Users },
-  { title: "Categorias", href: "/dashboard/settings/categories", icon: Tags },
-  { title: "Geral", href: "/dashboard/settings/general", icon: Settings },
+const settingsNavItems: { title: string, href: string, icon: React.ElementType }[] = [
+  //{ title: "Usuários", href: "/dashboard/settings/users", icon: Users },
+  //{ title: "Categorias", href: "/dashboard/settings/categories", icon: Tags },
+  //{ title: "Geral", href: "/dashboard/settings/general", icon: Settings },
 ]
 
 /**
@@ -76,6 +77,8 @@ const settingsNavItems = [
  * Agora com funcionalidade de expansão/retração completa
  */
 export function AppSidebar() {
+  const { logout } = useAPI()
+  const router = useRouter()
   // Hook para obter a rota atual
   const pathname = usePathname()
   // Hook para controlar o estado da sidebar (expandida/colapsada)
@@ -89,6 +92,18 @@ export function AppSidebar() {
   React.useEffect(() => {
     updatePreferences({ sidebarCollapsed: state === "collapsed" })
   }, [state, updatePreferences])
+
+  // Função para lidar com o logout
+  const handleLogout = async () => {
+    try {
+      await logout()
+      router.push("/auth/login")
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error)
+      // Mesmo se houver erro, redireciona para o login
+      router.push("/auth/login")
+    }
+  }
 
   return (
     <Sidebar collapsible="icon" side="left" className="border-r transition-all duration-300 ease-in-out">
@@ -137,6 +152,7 @@ export function AppSidebar() {
         <SidebarSeparator className="my-2" />
 
         {/* Seção de configurações (colapsível) */}
+        {settingsNavItems.length > 0 && (
         <SidebarGroup className="p-2">
           <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             {/* Botão para expandir/colapsar configurações */}
@@ -186,6 +202,7 @@ export function AppSidebar() {
             </CollapsibleContent>
           </Collapsible>
         </SidebarGroup>
+        )}
       </SidebarContent>
 
       {/* === RODAPÉ DA SIDEBAR (INFORMAÇÕES DO USUÁRIO) === */}
@@ -212,12 +229,17 @@ export function AppSidebar() {
 
           {/* Menu dropdown do usuário */}
           <DropdownMenuContent side="top" align="start" className="w-[--radix-popper-anchor-width]">
+            {/*
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="hover:bg-accent">Perfil</DropdownMenuItem>
             <DropdownMenuItem className="hover:bg-accent">Configurações</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 hover:bg-red-50">
+            */}
+            <DropdownMenuItem 
+              className="text-red-600 hover:bg-red-50 cursor-pointer"
+              onClick={handleLogout}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </DropdownMenuItem>

@@ -16,7 +16,7 @@ export default new Router({
   schema: {
     post: z.object({
       projectId: z.number().min(1),
-      itemGroupUuid: z.string().length(21),
+      itemGroupUuid: z.string(),
       notes: z.string().optional()
     })
   },
@@ -40,9 +40,10 @@ export default new Router({
           // Encontra o primeiro item disponível do grupo especificado
           const itemToTransfer = await tm.getRepository(Item).findOne({
             where: {
-              groupUuid: schema.itemGroupUuid,
+              group: { id: schema.itemGroupUuid },
               status: ItemStatus.Available,
             },
+            relations: { group: true },
             ...getLockingOptions()
           })
 

@@ -164,6 +164,60 @@ export class Client<Routers extends Record<string, Record<string, RouterShape>>>
     this.refreshToken = token
   }
 
+  getAccessToken(): string | undefined {
+    return this.accessToken
+  }
+
+  async uploadFile<
+    Path extends keyof Routers & string,
+    Method extends keyof Routers[Path] & string,
+    Router extends Routers[Path][Method] & RouterShape
+  >(
+    path: Path,
+    method: Method,
+    formData: FormData,
+    params?: Record<string, string | number>
+  ): Promise<ErrorResponse | ZodResponse | SuccessResponse<ExtractSuccessData<Router['response']>>> {
+    const config: AxiosRequestConfig = {
+      url: this.replacePathParams(String(path), params),
+      method: String(method).toUpperCase(),
+      data: formData,
+      headers: {
+        // Não definir Content-Type para FormData, deixar o axios definir automaticamente
+      }
+    }
+
+    try {
+      const response: AxiosResponse<Router['response']> = await this.api(config)
+
+      if (isErrorStatus(response.status)) {
+        const errorData = response.data as ErrorData
+        return new ErrorResponse({
+          message: errorData.message,
+          error: errorData.error,
+        }).setKey(response.status)
+      }
+
+      const successData = response.data as SucessData<ExtractSuccessData<Router['response']>>
+      return new SuccessResponse({
+        message: successData.message,
+        data: successData.data,
+        metadata: 'metadata' in successData ? successData.metadata : undefined
+      } as SuccessResponseOptions<ExtractSuccessData<Router['response']>>).setKey(response.status as keyof TReply<unknown>)
+    } catch (err: unknown) {
+      if (err instanceof AxiosError && err.message) {
+        if (err.response?.data?.error?.name === 'ZodError') {
+          return new ZodResponse({ 
+            message: err.response.data.message,
+            error: err.response.data.error as ZodError 
+          }).setKey(err.status as keyof TReply<unknown>)
+        }
+        return new ErrorResponse({ message: err.response?.data?.message ?? err.message }).setKey(err.status as keyof TReply<unknown>)
+      }
+      throw err
+    }
+  }
+
   private replacePathParams(path: string, params?: Record<string, string | number>): string {
     if (!params) return path
     return path.replace(/:([^/]+)/g, (_, param) => String(params[param] ?? ''))
@@ -187,7 +241,16 @@ export class Client<Routers extends Record<string, Record<string, RouterShape>>>
       method: String(method).toUpperCase(),
       // O header de autorização agora é injetado pelo interceptor
       params: method === 'get' ? Object.assign({}, request) : undefined,
-      data: method !== 'get' ? Object.assign({}, request) : undefined
+    }
+
+    // Verificar se é FormData para não usar Object.assign
+    if (method !== 'get') {
+      if (request instanceof FormData) {
+        config.data = request
+        // Não definir Content-Type para FormData, deixar o browser/axios definir com boundary
+      } else {
+        config.data = Object.assign({}, request)
+      }
     }
 
     try {

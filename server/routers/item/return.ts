@@ -17,7 +17,7 @@ export default new Router({
   authenticate: true,
   schema: {
     post: z.object({
-      itemGroupUuid: z.string().length(21),
+      itemGroupUuid: z.string(),
       projectId: z.number().min(1),
       quantity: z.number().int().positive().optional(),
       notes: z.string().optional()
@@ -41,7 +41,8 @@ export default new Router({
           
           // Modifica a query para buscar múltiplos itens
           const queryBuilder = tm.getRepository(Item).createQueryBuilder('item')
-            .where('item.groupUuid = :groupUuid', { groupUuid: schema.itemGroupUuid })
+            .innerJoin('item.group', 'group')
+            .where('group.id = :groupUuid', { groupUuid: schema.itemGroupUuid })
             .andWhere('item.projectId = :projectId', { projectId: schema.projectId })
             .andWhere('item.status = :status', { status: ItemStatus.InUse })
 

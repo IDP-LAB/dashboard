@@ -1,5 +1,5 @@
 import { isDev } from '@/utils/dev'
-import { registerItems } from './items.js' // Importar o novo script de itens
+import { fixItemsStatusByProjectAssociation, registerItems } from './items.js'
 import { registerProjects } from './projects.js'
 import { registerUsers } from './users.js'
 
@@ -9,6 +9,7 @@ if (isDev) {
   await registerUsers()
   await registerItems()
   await registerProjects()
+  await fixItemsStatusByProjectAssociation()
   
   console.log('🏁 Script de seeding finalizado.')
 }

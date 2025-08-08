@@ -1,6 +1,7 @@
 import { Item } from '@/database/entity/Item'
 import { ItemCategory } from '@/database/entity/ItemCategory'
 import { ItemTag } from '@/database/entity/ItemTag'
+import { Group } from '@/database/entity/Group'
 import { ItemStatus, ItemType } from '@/database/enums'
 import { fakerPT_BR as faker } from '@faker-js/faker'
 import { nanoid } from 'nanoid' // Importar nanoid
@@ -74,12 +75,18 @@ export async function registerItems() {
     
     console.log(`  - Criando grupo "${sharedProperties.name}" com ${quantity} unidades.`)
 
-    const groupUuid = nanoid()
+    // Criar Group correspondente
+    const group = await Group.create({
+      name: sharedProperties.name,
+      description: sharedProperties.description,
+      category: sharedProperties.category,
+      tags: sharedProperties.tags
+    }).save()
 
     for (let j = 0; j < quantity; j++) {
       const item = Item.create({
         ...sharedProperties,
-        groupUuid: groupUuid,
+        group: group,
       })
       allItemsToSave.push(item)
     }
@@ -88,4 +95,32 @@ export async function registerItems() {
   await Item.save(allItemsToSave)
 
   console.log(`\n✓ ${allItemsToSave.length} itens no total foram criados e adicionados ao estoque.`)
+}
+
+/**
+ * Verifica todos os itens no banco e garante a consistência do status
+ * com base na associação de projeto:
+ * - Se o item estiver associado a um projeto (project != null), o status deve ser "in_use".
+ * - Se estiver incorreto, atualiza o status e registra no console a correção.
+ */
+export async function fixItemsStatusByProjectAssociation() {
+  console.log('Iniciando verificação de status dos itens por associação a projeto...')
+  const items = await Item.find({ relations: { project: true } })
+
+  let fixed = 0
+  for (const item of items) {
+    const hasProject = !!item.project
+    const shouldBe = hasProject ? ItemStatus.InUse : null
+    const isWrong = hasProject && item.status !== ItemStatus.InUse
+
+    if (isWrong) {
+      const previous = item.status
+      item.status = ItemStatus.InUse
+      await item.save()
+      fixed++
+      console.log(`✓ Item #${item.id} (${item.name}) atualizado: ${previous} -> ${item.status} (project: ${item.project ? item.project.id : 'null'})`)
+    }
+  }
+
+  console.log(`Finalizado. Itens verificados: ${items.length}. Itens corrigidos: ${fixed}.`)
 }

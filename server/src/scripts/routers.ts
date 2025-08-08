@@ -64,7 +64,7 @@ export async function registerRouter () {
         return method({
           request,
           query: request.query,
-          reply: (reply as unknown as TypedReply<unknown, ReplyKeys>),
+          reply: (reply as TypedReply<unknown, ReplyKeys>),
           schema: parsed?.data ?? {}
         })
       }

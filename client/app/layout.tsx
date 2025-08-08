@@ -1,10 +1,9 @@
+import { Toaster } from "@/components/ui/toaster";
+import { APIProvider } from "@/providers/api";
+import { QueryProvider } from "@/providers/query";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { QueryProvider } from "@/providers/query";
-import { APIProvider } from "@/providers/api";
-import { Toaster } from "@/components/ui/toaster";
-import { SidebarProvider } from "@/components/ui/sidebar";
 
 const inter = Inter({ subsets: ["latin"] });
 

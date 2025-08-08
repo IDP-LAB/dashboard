@@ -77,8 +77,10 @@ export async function paginate<T extends ObjectLiteral>({
   }
 
   const whereCondition: FindOptionsWhere<T> = {
-    createdAt: (start !== undefined && end !== undefined) ? (Between(start, end) as unknown as T[keyof T]) : undefined, // forçando a tipagem
-    ...args
+    ...(start !== undefined && end !== undefined
+      ? { createdAt: Between(start, end) as never }
+      : {}),
+    ...args,
   }
 
   // relations defaults from metadata

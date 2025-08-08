@@ -1,18 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { z } from 'zod'
 import type { Router } from '../src/controllers/router.js'
+import type AddGroupQuantity from '../routers/group/$groupUuid/add-quantity.js'
 import type APIRoot from '../routers/index.js'
+import type Categories from '../routers/category/index.js'
 import type ConsumeItemByGroup from '../routers/item/consume.js'
 import type CreateItem from '../routers/item/create.js'
 import type CreateProject from '../routers/project/create.js'
 import type CreateUser from '../routers/users/create.js'
+import type DeleteGroup from '../routers/group/$groupUuid/delete.js'
+import type DeleteGroupFile from '../routers/group/$groupUuid/files/delete.js'
 import type DeleteItem from '../routers/item/$id/delete.js'
 import type DeleteProject from '../routers/project/$id/delete.js'
 import type DeleteUser from '../routers/users/$id/delete.js'
+import type DownloadGroupFile from '../routers/group/$groupUuid/files/download.js'
+import type EditGroupItems from '../routers/group/$groupUuid/edit.js'
 import type EditItem from '../routers/item/$id/edit.js'
 import type EditProject from '../routers/project/$id/edit.js'
 import type EditUser from '../routers/users/$id/edit.js'
 import type FindandTransferItem from '../routers/item/transfer.js'
+import type GetGroupFiles from '../routers/group/$groupUuid/files/index.js'
+import type GetGroupItems from '../routers/group/$groupUuid/index.js'
 import type GetItem from '../routers/item/$id/get.js'
 import type GetProject from '../routers/project/$id/get.js'
 import type GetUser from '../routers/users/$id/get.js'
@@ -21,9 +29,12 @@ import type ListItems from '../routers/item/index.js'
 import type ListProjects from '../routers/project/index.js'
 import type ListUsers from '../routers/users/index.js'
 import type ReturnItemByGroup from '../routers/item/return.js'
+import type Tags from '../routers/tag/index.js'
 import type TokenRefresh from '../routers/auth/refresh.js'
+import type UploadGroupFiles from '../routers/group/$groupUuid/files/upload.js'
 import type UserAuthentication from '../routers/auth/login.js'
 import type UserLogout from '../routers/auth/logout.js'
+import type UserRegistration from '../routers/auth/signup.js'
 
 type MergeUnion<T> = (T extends any ? (x: T) => void : never) extends (x: infer R) => void ? { [K in keyof R]: R[K] }: never
 type UnwrapPromise<T> = T extends Promise<any> ? Awaited<T> : T
@@ -59,6 +70,87 @@ export type Routers = {
       auth: undefined
     }
   },
+  '/auth/signup/rGlNb_pfybd7pobN': {
+    post: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof UserRegistration.methods.post>>>,
+      request: z.infer<NonNullable<typeof UserRegistration.schema>['post']>,
+      auth: undefined
+    }
+  },
+  '/category': {
+    delete: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof Categories.methods.delete>>>,
+      request: undefined,
+      auth: FirstParameter<typeof Categories>
+    },
+    get: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof Categories.methods.get>>>,
+      request: undefined,
+      auth: FirstParameter<typeof Categories>
+    },
+    post: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof Categories.methods.post>>>,
+      request: z.infer<NonNullable<typeof Categories.schema>['post']>,
+      auth: FirstParameter<typeof Categories>
+    },
+    put: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof Categories.methods.put>>>,
+      request: z.infer<NonNullable<typeof Categories.schema>['put']>,
+      auth: FirstParameter<typeof Categories>
+    }
+  },
+  '/group/:groupUuid': {
+    delete: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof DeleteGroup.methods.delete>>>,
+      request: z.infer<NonNullable<typeof DeleteGroup.schema>['delete']>,
+      auth: FirstParameter<typeof DeleteGroup>
+    },
+    get: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof GetGroupItems.methods.get>>>,
+      request: undefined,
+      auth: FirstParameter<typeof GetGroupItems>
+    }
+  },
+  '/group/:groupUuid/add-quantity': {
+    post: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof AddGroupQuantity.methods.post>>>,
+      request: z.infer<NonNullable<typeof AddGroupQuantity.schema>['post']>,
+      auth: FirstParameter<typeof AddGroupQuantity>
+    }
+  },
+  '/group/:groupUuid/edit': {
+    put: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof EditGroupItems.methods.put>>>,
+      request: z.infer<NonNullable<typeof EditGroupItems.schema>['put']>,
+      auth: FirstParameter<typeof EditGroupItems>
+    }
+  },
+  '/group/:groupUuid/files': {
+    get: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof GetGroupFiles.methods.get>>>,
+      request: undefined,
+      auth: FirstParameter<typeof GetGroupFiles>
+    },
+    post: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof UploadGroupFiles.methods.post>>>,
+      request: undefined,
+      auth: FirstParameter<typeof UploadGroupFiles>
+    }
+  },
+  '/group/:groupUuid/files/:fileId': {
+    delete: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof DeleteGroupFile.methods.delete>>>,
+      request: undefined,
+      auth: FirstParameter<typeof DeleteGroupFile>
+    }
+  },
+  '/group/:groupUuid/files/:fileId/download': {
+    get: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof DownloadGroupFile.methods.get>>>,
+      request: undefined,
+      auth: FirstParameter<typeof DownloadGroupFile>
+    }
+  },
   '/item': {
     get: {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof ListItems.methods.get>>>,
@@ -67,7 +159,7 @@ export type Routers = {
     },
     post: {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof CreateItem.methods.post>>>,
-      request: z.infer<NonNullable<typeof CreateItem.schema>['post']>,
+      request: undefined,
       auth: FirstParameter<typeof CreateItem>
     }
   },
@@ -136,6 +228,18 @@ export type Routers = {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof EditProject.methods.put>>>,
       request: z.infer<NonNullable<typeof EditProject.schema>['put']>,
       auth: FirstParameter<typeof EditProject>
+    }
+  },
+  '/tag': {
+    get: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof Tags.methods.get>>>,
+      request: undefined,
+      auth: FirstParameter<typeof Tags>
+    },
+    post: {
+      response: MergeUnion<UnwrapPromise<ReturnType<typeof Tags.methods.post>>>,
+      request: z.infer<NonNullable<typeof Tags.schema>['post']>,
+      auth: FirstParameter<typeof Tags>
     }
   },
   '/users': {

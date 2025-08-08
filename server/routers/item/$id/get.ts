@@ -1,4 +1,5 @@
 import { Router } from '@/controllers/router'
+import { Item } from '@/database/entity/Item'
 import { Role } from '@/database/enums'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasItemPermission } from '@/helper/hasItemPermission'
@@ -6,12 +7,13 @@ import { hasItemPermission } from '@/helper/hasItemPermission'
 export default new Router({
   name: 'Get Item',
   path: '/item/:id',
-  description: 'Get item information by ID',
+  description: 'Get individual item information by ID.',
   authenticate: true,
   methods: {
     async get({ reply, request }) {
       const params = request.params as { id: string }
       const itemId = Number(params.id)
+      
       const [permission, item] = await hasItemPermission({
         userId: request.user.id,
         isAdmin: request.user.role === Role.Administrator,
@@ -20,17 +22,34 @@ export default new Router({
       })
       
       if (!item) return reply.status(404).send({
-        message: `Item with ID ${params.id} not found`
+        message: `Item com ID ${params.id} não encontrado`
       })
 
       if (!permission) return reply.code(403).send({
-        message: 'You do not have sufficient permission!'
+        message: 'Você não tem permissão suficiente!'
       })
 
-      return reply.code(200).send({
-        message: 'Item details retrieved successfully',
-        data: item
-      })
+      try {
+        // Recarregar o item com relações para exibição completa
+        const fullItem = await Item.findOne({
+          where: { id: item.id },
+          relations: {
+            group: { category: true, tags: true },
+            project: { owner: true, memberships: { user: true } },
+            movements: { project: true, user: true },
+          },
+        })
+
+        return reply.code(200).send({
+          message: 'Detalhes do item recuperados com sucesso',
+          data: fullItem ?? item
+        })
+      } catch (error) {
+        console.error('Erro ao buscar item:', error)
+        return reply.code(500).send({
+          message: 'Erro interno do servidor ao buscar item'
+        })
+      }
     }
   }
 }) 

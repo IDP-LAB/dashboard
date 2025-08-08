@@ -32,7 +32,7 @@ export const mockUsers = [
  * Itens do sistema (equipamentos e insumos)
  * Mistura de equipamentos permanentes e materiais consumíveis
  */
-export const mockItems: Item[] = [
+export const mockItems = [
   {
     id: "item1",
     name: "Impressora 3D Ender 3",
@@ -118,7 +118,7 @@ export const mockItems: Item[] = [
  * Transações de estoque para demonstrar o histórico de movimentações
  * Inclui entradas, saídas e requisições para projetos
  */
-export const mockStockTransactions: StockTransaction[] = [
+export const mockStockTransactions = [
   {
     id: "trans1",
     itemId: "item2",
@@ -161,7 +161,7 @@ export const mockStockTransactions: StockTransaction[] = [
  * Projetos ativos e concluídos no Maker Space
  * Demonstra diferentes estágios e tipos de projetos
  */
-export const mockProjects: Project[] = [
+export const mockProjects = [
   {
     id: "proj1",
     name: "Robô Seguidor de Linha",
@@ -248,7 +248,7 @@ export const mockProjects: Project[] = [
  * Manutenções programadas e realizadas
  * Inclui manutenções preventivas e corretivas em diferentes status
  */
-export const mockMaintenances: Maintenance[] = [
+export const mockMaintenances = [
   {
     id: "maint1",
     equipmentId: "item1",

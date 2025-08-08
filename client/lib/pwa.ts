@@ -29,7 +29,7 @@ export function usePWAInstall() {
     // Verifica se já está instalado
     const checkIfInstalled = () => {
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches
-      const isInWebAppiOS = (window.navigator as any).standalone === true
+      const isInWebAppiOS = (window.navigator ).standalone === true
       setIsInstalled(isStandalone || isInWebAppiOS)
     }
 
@@ -101,7 +101,7 @@ export function useNetworkStatus() {
 
     const updateConnectionType = () => {
       const connection =
-        (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
+        (navigator ).connection || (navigator ).mozConnection || (navigator ).webkitConnection
       if (connection) {
         setConnectionType(connection.effectiveType || connection.type || "unknown")
       }
@@ -114,7 +114,7 @@ export function useNetworkStatus() {
     window.addEventListener("offline", updateOnlineStatus)
 
     const connection =
-      (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
+      (navigator ).connection || (navigator ).mozConnection || (navigator ).webkitConnection
     if (connection) {
       connection.addEventListener("change", updateConnectionType)
     }

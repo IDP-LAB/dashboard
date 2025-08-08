@@ -24,6 +24,7 @@ export default function DashboardPage() {
       href: "/dashboard/items",
       color: "text-blue-600",
     },
+    /*
     {
       title: "Projetos",
       description: "Gerenciar projetos ativos",
@@ -45,13 +46,14 @@ export default function DashboardPage() {
       href: "/dashboard/reports",
       color: "text-orange-600",
     },
+    */
   ];
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Bem-vindo, {user?.name || user?.username}!
+          Bem-vindo, {user?.username}!
         </h1>
         <p className="text-muted-foreground">
           Selecione uma opção abaixo para começar
