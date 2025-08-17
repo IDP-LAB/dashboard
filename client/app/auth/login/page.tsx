@@ -111,10 +111,10 @@ export default function LoginPage() {
       <CardHeader className="space-y-2">
         <div className="flex w-full justify-center">
           <Image
-            src="/placeholder-logo.svg"
+            src="/idealab_azul.png"
             alt="Logo"
-            width={40}
-            height={40}
+            width={80}
+            height={80}
             className="rounded-2xl"
             priority
           />
