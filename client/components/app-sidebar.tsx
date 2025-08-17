@@ -111,13 +111,8 @@ export function AppSidebar() {
       {/* === CABEÇALHO DA SIDEBAR === */}
       <SidebarHeader className="p-2 border-b">
         <Link href="/dashboard" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md transition-colors">
-          <Package2 className="h-6 w-6 text-primary" />
-          {/* Mostra o nome apenas quando a sidebar está expandida */}
-          {state === "expanded" && (
-            <span className="font-semibold text-lg bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              MakerSpace
-            </span>
-          )}
+          {/* Logo do projeto substituindo o ícone e texto antigo */}
+          <img src="/idealab_azul.png" alt="IDEA LAB idp logo" className="h-8 w-auto" />
         </Link>
       </SidebarHeader>
 

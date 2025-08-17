@@ -27,10 +27,8 @@ export function DashboardLayout({
           <div className="flex items-center gap-1">
             {/* Botão para abrir/fechar sidebar (visível apenas em mobile) */}
             <SidebarTrigger className="md:hidden hover:bg-accent transition-colors" />
-            {/* Título da aplicação (oculto em telas pequenas) */}
-            <h1 className="text-xl font-semibold ml-2 hidden sm:block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Maker Space Manager
-            </h1>
+            {/* Logo do projeto substituindo o título antigo */}
+            <img src="/idealab_azul.png" alt="IDEA LAB idp logo" className="h-16 w-auto ml-2 hidden sm:block" />
           </div>
 
           {/* Lado direito do header - notificações */}
