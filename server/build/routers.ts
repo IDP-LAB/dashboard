@@ -38,7 +38,7 @@ export const routers = {
   '/auth/login': UserAuthentication,
   '/auth/logout': UserLogout,
   '/auth/refresh': TokenRefresh,
-  '/auth/signup/rGlNb_pfybd7pobN': UserRegistration,
+  '/auth/signup/U4seYC7OYwkc3LlL': UserRegistration,
   '/category': Categories,
   '/group/:groupUuid': [DeleteGroup, GetGroupItems],
   '/group/:groupUuid/add-quantity': AddGroupQuantity,
