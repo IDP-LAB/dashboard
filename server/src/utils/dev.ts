@@ -1,1 +1,1 @@
-export const isDev = process.env.PRODUCTION === false
+export const isDev = true

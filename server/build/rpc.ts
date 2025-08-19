@@ -70,7 +70,7 @@ export type Routers = {
       auth: undefined
     }
   },
-  '/auth/signup/rGlNb_pfybd7pobN': {
+  '/auth/signup/zTM-u5GDSEv-HmSk': {
     post: {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof UserRegistration.methods.post>>>,
       request: z.infer<NonNullable<typeof UserRegistration.schema>['post']>,
