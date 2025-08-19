@@ -45,6 +45,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ItemForm } from "@/components/item-form"
+import { formatCurrency } from "@/lib/formats"
 // import { GroupManager } from "@/components/group/group-manager"
 
 export default function ItemDetailsPage() {
@@ -434,7 +435,7 @@ export default function ItemDetailsPage() {
             {item.price && (
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Preço</Label>
-                <p className="text-sm">R$ {item.price.toFixed(2)}</p>
+                <p className="text-sm">{formatCurrency(item.price)}</p>
               </div>
             )}
             <div>

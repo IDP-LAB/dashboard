@@ -41,6 +41,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSession } from "@/stores/auth"
+import { formatCurrency } from "@/lib/formats";
 
 interface Item {
   id: number;
@@ -283,7 +284,7 @@ export default function ItemsPage() {
                     </div>
                     <div className="mt-3 flex items-center justify-between">
                       {typeof item.price === 'number' ? (
-                        <span className="text-xs text-muted-foreground">Unit: R$ {item.price.toFixed(2)}</span>
+                        <span className="text-xs text-muted-foreground">{formatCurrency(item.price)}</span>
                       ) : <span />}
                       <div className="flex items-center gap-2">
                         <Button onClick={() => handleEditGroup(item.groupUuid as string)} variant="outline" size="sm" className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300">

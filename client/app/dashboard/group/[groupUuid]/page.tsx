@@ -51,6 +51,7 @@ import { ItemForm } from "@/components/item-form"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FileViewer } from "@/components/file-viewer"
+import { formatCurrency } from "@/lib/formats"
 
 interface GroupItem {
   id: number
@@ -494,7 +495,7 @@ export default function EditGroupPage() {
           <div>
             <p className="text-sm font-medium text-muted-foreground">Valor Total Estimado</p>
             <p className="text-lg font-semibold">
-              R$ {groupItems.reduce((sum, it) => sum + (it.price || 0), 0).toFixed(2)}
+              {formatCurrency(groupItems.reduce((sum, it) => sum + (it.price || 0), 0))}
             </p>
           </div>
 

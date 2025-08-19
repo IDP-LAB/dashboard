@@ -23,56 +23,65 @@ export default new Router({
       if (!validation.success) {
         return reply.code(400).send({ message: 'Parâmetros de consulta inválidos.', error: validation.error })
       }
-      
+
       const { page, pageSize, groupBy, interval, search } = validation.data
 
       if (groupBy === 'groupUuid') {
         let qb = repository.item.createQueryBuilder('item')
           .innerJoin('item.group', 'group')
+          // 1. Adicione o JOIN para a relação 'tags' a partir do alias 'group'
+          .innerJoin('group.tags', 'tag')
           .select('group.id', 'groupUuid')
-          .addSelect('COUNT(item.id)', 'quantity')
-          .addSelect('MIN(item.id)', 'representativeId')
+          // 3. Use COUNT(DISTINCT) para contar os itens corretamente após o JOIN com tags
+          .addSelect('COUNT(DISTINCT item.id)', 'quantity')
+          .addSelect('MIN(item.id)', 'representativeId');
 
         // Aplicar filtro de busca se fornecido
         if (search) {
-          qb = qb.where('item.name LIKE :search OR item.description LIKE :search', {
+          // 2. Use o alias 'tag' na condição WHERE
+          qb = qb.where('item.name LIKE :search OR item.description LIKE :search OR tag.name LIKE :search', {
             search: `%${search}%`
-          })
+          });
         }
 
-        qb = qb.groupBy('group.id')
+        qb = qb.groupBy('group.id');
 
         // Contar total de grupos (após filtro de busca)
-        // Usar uma subquery para contar grupos distintos corretamente
+        // 4. A query de contagem também precisa do JOIN e do WHERE para ser precisa
         const countQb = repository.item.createQueryBuilder('item')
-          .innerJoin('item.group', 'group')
-          .select('COUNT(DISTINCT group.id)', 'count')
-        
+          .innerJoin('item.group', 'group');
+
         if (search) {
-          countQb.where('item.name LIKE :search OR item.description LIKE :search', {
-            search: `%${search}%`
-          })
+          // Aplica o mesmo JOIN e WHERE na query de contagem
+          countQb
+            .innerJoin('group.tags', 'tag')
+            .where('item.name LIKE :search OR item.description LIKE :search OR tag.name LIKE :search', {
+              search: `%${search}%`
+            });
         }
 
-        const totalGroupsResult = await countQb.getRawOne()
-        const totalGroups = parseInt(totalGroupsResult?.count ?? '0', 10)
+        // A contagem de grupos distintos continua correta
+        countQb.select('COUNT(DISTINCT group.id)', 'count');
 
-        // Buscar grupos paginados
+        const totalGroupsResult = await countQb.getRawOne();
+        const totalGroups = parseInt(totalGroupsResult?.count ?? '0', 10);
+
+        // O restante do seu código permanece o mesmo...
         const groupedItems = await qb
-          .orderBy('MIN(item.id)', 'ASC') // Ordenação consistente
+          .orderBy('MIN(item.id)', 'ASC')
           .limit(pageSize)
           .offset((page - 1) * pageSize)
-          .getRawMany()
+          .getRawMany();
 
         if (groupedItems.length === 0) {
           return reply.code(200).send({
             message: 'Nenhum grupo de itens encontrado.',
             data: [],
-            metadata: { 
-              total: totalGroups, 
-              currentPage: page, 
-              totalPages: Math.ceil(totalGroups / pageSize), 
-              pageSize 
+            metadata: {
+              total: totalGroups,
+              currentPage: page,
+              totalPages: Math.ceil(totalGroups / pageSize),
+              pageSize
             }
           })
         }
@@ -94,8 +103,8 @@ export default new Router({
           // Compatibilidade: expor groupUuid no payload
           groupUuid: item.group?.id,
           // Compatibilidade: expor category/tags a partir do grupo
-          category: (item.group )?.category ?? null,
-          tags: (item.group )?.tags ?? [],
+          category: (item.group)?.category ?? null,
+          tags: (item.group)?.tags ?? [],
           quantity: quantityMap.get(item.group?.id ?? '') || 0
         }))
 
