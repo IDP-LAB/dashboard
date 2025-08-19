@@ -34,8 +34,8 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
-  Package2,
-  Settings
+  Settings,
+  Users
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
