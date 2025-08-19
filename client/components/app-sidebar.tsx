@@ -1,52 +1,45 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarSeparator,
-  SidebarRail,
-  useSidebar,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  LayoutDashboard,
-  Box,
-  Warehouse,
-  Wrench,
-  ClipboardList,
-  BarChart3,
-  Settings,
-  Users,
-  Tags,
-  LogOut,
-  Package2,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import React from "react"
-import { usePreferences } from "@/lib/store"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  SidebarSeparator,
+  useSidebar,
+} from "@/components/ui/sidebar"
 import { useAPI } from "@/hooks/useAPI"
+import { usePreferences } from "@/lib/store"
+import { cn } from "@/lib/utils"
+import {
+  Box,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  Package2,
+  Settings
+} from "lucide-react"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import React from "react"
 
 /**
  * Itens de navegação principal da sidebar
@@ -67,6 +60,7 @@ const mainNavItems = [
  * Organizados em uma seção separada e colapsível
  */
 const settingsNavItems: { title: string, href: string, icon: React.ElementType }[] = [
+  { title: "Logs", href: "/dashboard/settings/logs", icon: FileText },
   //{ title: "Usuários", href: "/dashboard/settings/users", icon: Users },
   //{ title: "Categorias", href: "/dashboard/settings/categories", icon: Tags },
   //{ title: "Geral", href: "/dashboard/settings/general", icon: Settings },
@@ -109,7 +103,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" side="left" className="border-r transition-all duration-300 ease-in-out">
       {/* === CABEÇALHO DA SIDEBAR === */}
-      <SidebarHeader className="p-2 border-b">
+      <SidebarHeader className="p-2 border-b bg-white">
         <Link href="/dashboard" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md transition-colors">
           {/* Logo do projeto substituindo o ícone e texto antigo */}
           <img src="/idealab_azul.png" alt="IDEA LAB idp logo" className="h-8 w-auto" />
@@ -117,7 +111,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       {/* === CONTEÚDO PRINCIPAL DA SIDEBAR === */}
-      <SidebarContent className="flex-1 p-0">
+      <SidebarContent className="flex-1 p-0 bg-white">
         {/* Seção de navegação principal */}
         <SidebarGroup className="p-2">
           <SidebarGroupLabel className={cn(state === "collapsed" && "hidden")}>Principal</SidebarGroupLabel>
@@ -202,7 +196,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* === RODAPÉ DA SIDEBAR (INFORMAÇÕES DO USUÁRIO) === */}
-      <SidebarFooter className="p-2 border-t">
+      <SidebarFooter className="p-2 border-t bg-white">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

@@ -13,23 +13,18 @@ export class File extends BaseEntity {
 
   @Column({ type: 'varchar', length: 255 })
     filename!: string
-
   @Column({ type: 'varchar', length: 255 })
     originalName!: string
-
   @Column({ type: 'varchar', length: 100 })
     mimeType!: string
-
   @Column({ type: 'bigint' })
     size!: number
-
   @Column({ 
     type: 'simple-enum',
     enum: FileType,
     default: FileType.Document 
   })
     type!: FileType
-
   @Column({ type: 'varchar', length: 500 })
     path!: string
 
@@ -39,7 +34,6 @@ export class File extends BaseEntity {
 
   @CreateDateColumn()
     createdAt!: Date
-
   @UpdateDateColumn()
     updatedAt!: Date
 } 

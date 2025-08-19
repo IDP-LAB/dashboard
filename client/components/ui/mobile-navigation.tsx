@@ -19,6 +19,7 @@ import {
   Plus,
   Search,
   Bell,
+  FileText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useNotifications } from "@/lib/store"
@@ -33,6 +34,7 @@ const mobileNavItems = [
   { title: "Manutenção", href: "/dashboard/maintenance", icon: Wrench },
   { title: "Projetos", href: "/dashboard/projects", icon: ClipboardList },
   { title: "Relatórios", href: "/dashboard/reports", icon: BarChart3 },
+  { title: "Logs", href: "/dashboard/settings/logs", icon: FileText },
 ]
 
 /**

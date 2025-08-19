@@ -43,7 +43,7 @@ export default new DataSource({
   synchronize: databaseType !== 'mysql',
   // Auto-run migrations when using MySQL in runtime, to avoid manual steps
   migrationsRun: databaseType === 'mysql',
-  // logging: true,
+  logging: true,
   entities: [join(path, 'entity', '**', '*.{js,ts}')],
   migrations: [join(path, 'migration', '**', '*.{js,ts}')],
 })
