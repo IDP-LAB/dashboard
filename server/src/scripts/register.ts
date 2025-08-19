@@ -12,4 +12,6 @@ if (isDev) {
   await fixItemsStatusByProjectAssociation()
   
   console.log('🏁 Script de seeding finalizado.')
+} else {
+  console.log('Modo produção')
 }

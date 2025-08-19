@@ -17,6 +17,7 @@ export class Router<
   public decompress: FastifyCompressRouteOptions['decompress']
   public authenticate: Authenticate
   public methods: Routers
+  public readonly private: boolean
 
   constructor(options: RouterOptions<Authenticate, Schema, Query, Routers>) {
     this.name = options.name
@@ -28,5 +29,6 @@ export class Router<
     this.methods = options.methods
     this.compress = options.compress
     this.decompress = options.decompress
+    this.private = options.private ?? false
   }
 }

@@ -1,15 +1,19 @@
 import { Router } from '@/controllers/router.js'
 import { User } from '@/database/entity/User'
 import { Role } from '@/database/enums'
-import z from 'zod'
 import { nanoid } from 'nanoid'
+import z from 'zod'
 
 // Gera uma rota aleatória a cada inicialização
 const ADMIN_SIGNUP_TOKEN = nanoid(16)
 const ADMIN_SIGNUP_PATH = `/auth/signup/${ADMIN_SIGNUP_TOKEN}`
 
-const router = new Router({
+// Exibe a rota no console na inicialização
+console.log(`[Admin Signup] Rota temporária para criar administrador disponível em: ${ADMIN_SIGNUP_PATH}`)
+
+export default new Router({
   path: ADMIN_SIGNUP_PATH,
+  private: true,
   schema: {
     post: z.object({
       name: z.string().min(4).max(64),
@@ -50,8 +54,3 @@ const router = new Router({
     }
   }
 })
-
-// Exibe a rota no console na inicialização
-console.log(`[Admin Signup] Rota temporária para criar administrador disponível em: ${ADMIN_SIGNUP_PATH}`)
-
-export default router

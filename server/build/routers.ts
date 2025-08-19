@@ -31,14 +31,12 @@ import TokenRefresh from '../routers/auth/refresh.js'
 import UploadGroupFiles from '../routers/group/$groupUuid/files/upload.js'
 import UserAuthentication from '../routers/auth/login.js'
 import UserLogout from '../routers/auth/logout.js'
-import UserRegistration from '../routers/auth/signup.js'
 
 export const routers = {
   '/': APIRoot,
   '/auth/login': UserAuthentication,
   '/auth/logout': UserLogout,
   '/auth/refresh': TokenRefresh,
-  '/auth/signup/zTM-u5GDSEv-HmSk': UserRegistration,
   '/category': Categories,
   '/group/:groupUuid': [DeleteGroup, GetGroupItems],
   '/group/:groupUuid/add-quantity': AddGroupQuantity,

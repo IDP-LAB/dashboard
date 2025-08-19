@@ -106,6 +106,7 @@ export type RouterOptions<
 > = {
   name: string
   path?: string
+  private?: boolean
   authenticate?: Authenticate
   schema?: Schema
   query?: Query

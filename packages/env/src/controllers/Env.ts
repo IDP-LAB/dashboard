@@ -34,7 +34,10 @@ export class Env {
   parser (value: string) {
     switch (true) {
     case !Number.isNaN(Number(value)): return Number(value)
-    case /^(true|false)$/.test(value): return Boolean(value)
+    case /^(true|false)$/.test(value): {
+      if (value === 'true') return true
+      return false
+    }
     default: return value
     }
   }

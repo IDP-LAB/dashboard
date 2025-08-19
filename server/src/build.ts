@@ -44,6 +44,8 @@ class Build {
           continue
         }
 
+        if (router.private) continue
+
         const routerName = router.name.replaceAll(' ', '')
         const routerPath = formatPath(router.path ?? relativeFilePathToRoutersDir)
         

@@ -34,7 +34,6 @@ import type TokenRefresh from '../routers/auth/refresh.js'
 import type UploadGroupFiles from '../routers/group/$groupUuid/files/upload.js'
 import type UserAuthentication from '../routers/auth/login.js'
 import type UserLogout from '../routers/auth/logout.js'
-import type UserRegistration from '../routers/auth/signup.js'
 
 type MergeUnion<T> = (T extends any ? (x: T) => void : never) extends (x: infer R) => void ? { [K in keyof R]: R[K] }: never
 type UnwrapPromise<T> = T extends Promise<any> ? Awaited<T> : T
@@ -67,13 +66,6 @@ export type Routers = {
     post: {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof TokenRefresh.methods.post>>>,
       request: undefined,
-      auth: undefined
-    }
-  },
-  '/auth/signup/zTM-u5GDSEv-HmSk': {
-    post: {
-      response: MergeUnion<UnwrapPromise<ReturnType<typeof UserRegistration.methods.post>>>,
-      request: z.infer<NonNullable<typeof UserRegistration.schema>['post']>,
       auth: undefined
     }
   },
