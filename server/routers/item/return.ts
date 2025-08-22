@@ -9,6 +9,7 @@ import { ItemStatus, MovementType, Role } from '@/database/enums'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasProjectPermission } from '@/helper/hasProjectPermission'
 import { z } from 'zod'
+import { Log } from '@/database'
 
 export default new Router({
   name: 'Return Item By Group',
@@ -85,6 +86,15 @@ export default new Router({
         })
 
         const message = `${returnedItems.length} item(s) devolvido(s) com sucesso.`
+
+        // Logs padronizados: itens atualizados (retornados)
+        for (const item of returnedItems) {
+          await Log.create({
+            code: 'item:updated',
+            data: { id: item.id, ownerId: request.user.id, name: item.name },
+            user: { id: request.user.id }
+          }).save()
+        }
         return reply.code(200).send({
           message,
           data: returnedItems,

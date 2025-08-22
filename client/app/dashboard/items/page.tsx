@@ -1,32 +1,5 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useToast } from "@/components/ui/use-toast"
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  Eye,
-  Plus,
-  Search,
-  Package2,
-  Loader2,
-  AlertTriangle, 
-  LayoutGrid, 
-  Rows 
-} from "lucide-react"
-import { useAPI } from "@/hooks/useAPI"
-import { isSuccessResponse } from "@/lib/response"
-import { ItemStatus, ItemType } from "server"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,11 +10,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useSession } from "@/stores/auth"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
+import { useAPI } from "@/hooks/useAPI";
 import { formatCurrency } from "@/lib/formats";
+import { isSuccessResponse } from "@/lib/response";
+import { useSession } from "@/stores/auth";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Edit,
+  LayoutGrid,
+  Loader2,
+  Package2,
+  Plus,
+  Rows,
+  Search,
+  Trash2
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface Item {
   id: number;
@@ -106,18 +98,10 @@ export default function ItemsPage() {
     queryKey: ["items", "group", page, debouncedSearch],
     queryFn: async () => {
       // Constrói os parâmetros da URL dinamicamente
-      const params = new URLSearchParams({
-        pageSize: String(PAGE_SIZE),
-        page: String(page),
-        groupBy: "groupUuid",
-      });
-
-      if (debouncedSearch) params.append("search", debouncedSearch);
-
       const response = await client.query(
-        `/item?${params.toString()}` as "/item",
+        "/item",
         "get",
-        undefined
+        { query: { pageSize: String(PAGE_SIZE), page: String(page), groupBy: "groupUuid", search: debouncedSearch || undefined } }
       );
       if (!isSuccessResponse(response)) throw new Error(response.message);
 

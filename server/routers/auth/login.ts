@@ -1,6 +1,6 @@
 import { Router } from '@/controllers/router.js'
 import { Auth } from '@/database/entity/Auth.js'
-import { repository } from '@/database/index.js'
+import { repository, Log } from '@/database/index.js'
 import { getCookieOptions } from '@/utils/cookie'
 import { timer } from '@/utils/timer.js'
 import jwt from 'jsonwebtoken'
@@ -61,6 +61,13 @@ export default new Router({
       reply.setCookie('Bearer', accessToken, getCookieOptions(expirationTokenDate))
       reply.setCookie('Refresh', refreshToken, getCookieOptions(expirationRefreshDate))
   
+      // Log: user login
+      await Log.create({
+        code: 'user:login',
+        data: { id: user.id, ownerId: user.id, username: user.username, email: user.email },
+        user: { id: user.id }
+      }).save()
+
       return reply.code(200).send({
         message: 'Login successful',
         data: {

@@ -1,5 +1,6 @@
 import { Router } from '@/controllers/router.js'
 import { User } from '@/database/entity/User'
+import { Log } from '@/database'
 import { Role } from '@/database/enums'
 import { nanoid } from 'nanoid'
 import z from 'zod'
@@ -19,7 +20,7 @@ export default new Router({
       name: z.string().min(4).max(64),
       username: z.string().min(4).max(64),
       email: z.string().email(),
-      language: z.string(),
+      language: z.string().default('pt-BR'),
       password: z.string().min(8).max(30)
     })
   },
@@ -41,6 +42,12 @@ export default new Router({
         .create({ ...schema, role: Role.Administrator })
         .setPassword(schema.password))
         .save()
+      
+      await Log.create({
+        code: 'user:created',
+        data: { id: user.id, ownerId: user.id, name: user.name, username: user.username, email: user.email, role: user.role },
+        user: { id: user.id }
+      }).save()
   
       return reply.code(201).send({
         message: 'User registered successfully!',

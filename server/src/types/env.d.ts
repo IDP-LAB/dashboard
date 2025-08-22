@@ -1,5 +1,5 @@
 export type TProcessEnv = {
-  PRODUCTION: string
+  PRODUCTION: boolean
   PORT: number
   REDIS_HOST: string
   REDIS_PORT: number

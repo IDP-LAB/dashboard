@@ -1,5 +1,5 @@
 import { compare, hash } from 'bcryptjs'
-import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn, type Relation, UpdateDateColumn } from 'typeorm'
+import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, type Relation, UpdateDateColumn } from 'typeorm'
 import { Role } from '../enums.js'
 import { Hidden } from '../hooks/hidden.js'
 import { Auth } from './Auth.js'
@@ -8,6 +8,7 @@ import { Log } from './Log.js'
 import { Project } from './Project.js'
 import { ProjectMembership } from './ProjectMembership.js'
 import { Item } from './Item.js'
+import { Invite } from './Invite.js'
 
 @Entity({ name: 'users' })
 export class User extends BaseEntity {
@@ -24,7 +25,7 @@ export class User extends BaseEntity {
     language!: string
   @Hidden({ type: 'text' })
     password!: string
-  @Column({ type: 'varchar', default: Role.User })
+  @Column({ type: 'varchar', default: Role.Student })
     role!: Role
 
   @OneToMany(() => ItemMovement, (movement) => movement.user)
@@ -37,8 +38,12 @@ export class User extends BaseEntity {
     auths!: Relation<Auth[]>
   @OneToMany(() => Log, (log) => log.user)
     logs!: Relation<Log[]>
-  @OneToMany(() => Item, (item) => item.createBy)
+  @OneToMany(() => Item, (item) => item.createdBy)
     ownerItens!: Relation<Item[]>
+  @ManyToOne(() => Invite, (invite) => invite.users)
+    invite!: Relation<Invite>
+  @OneToMany(() => Invite, (invite) => invite.createdBy)
+    ownerInvites!: Relation<Invite[]>
 
   @UpdateDateColumn()
     updatedAt!: Date

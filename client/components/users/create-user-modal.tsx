@@ -9,21 +9,14 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/co
 import { Badge } from "@/components/ui/badge"
 import { UserPlus, User, Mail, Lock, Users, Eye, EyeOff } from "lucide-react"
 import { toast } from "sonner"
-
-interface User {
-  id: string
-  name: string
-  email: string
-  userType: "student" | "teacher" | "admin"
-  status: "active" | "inactive" | "pending"
-  createdAt: string
-  lastLogin?: string
-  avatar?: string
-}
+import { useAPI } from "@/hooks/useAPI"
+import { isSuccessResponse } from "@/lib/response"
+import { useMutation } from "@tanstack/react-query"
+import { Role } from "server"
 
 interface CreateUserModalProps {
   onClose: () => void
-  onUserCreated: (user: User) => void
+  onUserCreated: () => void
 }
 
 interface CreateUserForm {
@@ -35,6 +28,7 @@ interface CreateUserForm {
 }
 
 export function CreateUserModal({ onClose, onUserCreated }: CreateUserModalProps) {
+  const { client } = useAPI()
   const [form, setForm] = useState<CreateUserForm>({
     name: "",
     email: "",
@@ -46,6 +40,31 @@ export function CreateUserModal({ onClose, onUserCreated }: CreateUserModalProps
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<Partial<CreateUserForm>>({})
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const username = form.email.includes('@') ? form.email.split('@')[0] : form.name.replace(/\s+/g, '').toLowerCase()
+      const role: Role = form.userType === 'admin' ? Role.Administrator : form.userType === 'teacher' ? Role.Teacher : Role.Student
+      const payload = {
+        name: form.name.trim(),
+        username,
+        email: form.email.trim().toLowerCase(),
+        language: 'pt-BR',
+        password: form.password,
+        role,
+      }
+      const response = await client.query('/users', 'post', payload)
+      if (!isSuccessResponse(response)) throw new Error(response.message)
+      return response
+    },
+    onSuccess: () => {
+      toast.success('Usuário criado com sucesso!')
+      onUserCreated()
+    },
+    onError: (error: unknown) => {
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar usuário')
+    }
+  })
 
   // Função para atualizar campos do formulário
   const updateForm = (field: keyof CreateUserForm, value: string) => {
@@ -105,27 +124,8 @@ export function CreateUserModal({ onClose, onUserCreated }: CreateUserModalProps
     }
 
     setIsLoading(true)
-
     try {
-      // Simular chamada para API
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Criar novo usuário
-      const newUser: User = {
-        id: Math.random().toString(36).substring(2, 15),
-        name: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
-        userType: form.userType as "student" | "teacher" | "admin",
-        status: "active",
-        createdAt: new Date().toISOString().split('T')[0],
-      }
-
-      onUserCreated(newUser)
-      toast.success(`Usuário ${newUser.name} criado com sucesso!`)
-
-    } catch (error) {
-      toast.error("Erro ao criar usuário")
-      console.error("Erro ao criar usuário:", error)
+      await createMutation.mutateAsync()
     } finally {
       setIsLoading(false)
     }

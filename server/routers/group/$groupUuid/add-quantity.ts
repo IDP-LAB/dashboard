@@ -1,6 +1,7 @@
 import { Router } from '@/controllers/router'
 import { Item } from '@/database/entity/Item'
 import { Group } from '@/database/entity/Group'
+import { Log } from '@/database'
 import { ItemType, Role } from '@/database/enums'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasItemPermission } from '@/helper/hasItemPermission'
@@ -65,6 +66,15 @@ export default new Router({
         }
 
         const savedItems = await Item.save(newItems)
+
+        // Logs para cada novo item criado
+        for (const savedItem of savedItems) {
+          await Log.create({
+            code: 'item:created',
+            data: { id: savedItem.id, ownerId: request.user.id, name: savedItem.name, groupId: groupUuid },
+            user: { id: request.user.id }
+          }).save()
+        }
 
         return reply.code(201).send({
           message: `${schema.quantity} item(s) adicionado(s) ao grupo com sucesso`,

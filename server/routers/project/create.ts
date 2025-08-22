@@ -1,5 +1,6 @@
 import { Router } from '@/controllers/router'
 import { Project } from '@/database/entity/Project'
+import { Log } from '@/database'
 import { ProjectStatus } from '@/database/enums'
 import { z } from 'zod'
 
@@ -25,6 +26,13 @@ export default new Router({
         owner: {
           id: request.user.id
         }
+      }).save()
+
+      // Log padronizado: projeto criado
+      await Log.create({
+        code: 'project:created',
+        data: { id: project.id, ownerId: request.user.id, name: project.name },
+        user: { id: request.user.id }
       }).save()
 
       return reply.code(201).send({

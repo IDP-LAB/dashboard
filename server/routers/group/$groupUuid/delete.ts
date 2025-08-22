@@ -2,6 +2,7 @@ import { Router } from '@/controllers/router'
 import { Item } from '@/database/entity/Item'
 import { File } from '@/database/entity/File'
 import { Group } from '@/database/entity/Group'
+import { Log } from '@/database'
 import { ItemType, Role } from '@/database/enums'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasItemPermission } from '@/helper/hasItemPermission'
@@ -74,8 +75,30 @@ export default new Router({
           await File.remove(groupFiles)
         }
 
+        // Criar logs antes de deletar os itens
+        for (const item of group.items) {
+          await Log.create({
+            code: 'item:deleted',
+            data: { id: item.id, name: item.name, group: groupUuid, ownerId: request.user.id },
+            user: { id: request.user.id }
+          }).save()
+        }
+
         // Deletar todos os itens do grupo
         await Item.remove(group.items)
+
+        // Log do grupo deletado (metadados agregados)
+        await Log.create({
+          code: 'group:deleted',
+          data: {
+            id: groupUuid,
+            ownerId: request.user.id,
+            deletedItems: group.items.length,
+            deletedFiles: groupFiles.length,
+            name: group.name,
+          },
+          user: { id: request.user.id }
+        }).save()
 
         return reply.code(200).send({
           message: `Grupo de ${group.items.length} item(s) e ${groupFiles.length} arquivo(s) deletado com sucesso`,

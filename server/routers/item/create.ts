@@ -1,5 +1,6 @@
 import { Router } from '@/controllers/router'
 import { Item } from '@/database/entity/Item'
+import { Log } from '@/database'
 import { ItemCategory } from '@/database/entity/ItemCategory'
 import { ItemTag } from '@/database/entity/ItemTag'
 import { File, FileType } from '@/database/entity/File'
@@ -30,6 +31,12 @@ const itemSchema = z.object({
   tags: z.array(idOrNameSchema).optional(),
 })
 
+type FileMetadata = {
+  filename: string,
+  mimetype: string,
+  data: Buffer
+}
+
 export default new Router({
   name: 'CreateItem',
   path: '/item',
@@ -41,7 +48,7 @@ export default new Router({
       // Processar multipart/form-data
       const parts = request.parts()
       const fields: Record<string, any> = { tags: [] }
-      const files: any[] = []
+      const files: FileMetadata[] = []
       
       for await (const part of parts) {
         if (part.type === 'file') {
@@ -162,11 +169,21 @@ export default new Router({
             status: schema.status,
             acquisitionAt: schema.acquisitionAt,
             group: group!,
+            createdBy: { id: request.user.id } as any,
           }
           items.push(newItem)
         }
 
         const savedItems = await Item.save(items) as Item[]
+
+        // Log padronizado: item(s) criado(s)
+        for (const saved of savedItems) {
+          await Log.create({
+            code: 'item:created',
+            data: { id: saved.id, ownerId: request.user.id, name: saved.name, groupId: group?.id },
+            user: { id: request.user.id }
+          }).save()
+        }
 
         // Processar uploads de arquivos
         try {

@@ -47,7 +47,7 @@ export function CategoryCombobox({
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const response = await client.query("/category", "get", undefined)
+      const response = await client.query("/category", "get")
       if (!isSuccessResponse(response)) return []
       return response.data as Category[]
     }

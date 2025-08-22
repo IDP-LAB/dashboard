@@ -1,6 +1,7 @@
 export enum Role {
   Administrator = 'administrator',
-  User = 'user'
+  Teacher = 'teacher',
+  Student = 'student'
 }
 
 export enum ProjectStatus {

@@ -66,7 +66,7 @@ export default function ItemDetailsPage() {
   const { data: item, isLoading, error } = useQuery({
     queryKey: ["item", itemId],
           queryFn: async () => {
-        const response = await client.query("/item/:id", "get", { id: itemId }, undefined)
+        const response = await client.query("/item/:id", "get", { id: itemId })
         if (!isSuccessResponse(response)) throw new Error(response.message)
         return response.data
     },
@@ -78,7 +78,7 @@ export default function ItemDetailsPage() {
     queryKey: ["item-group", item?.group?.id],
     queryFn: async () => {
       if (!item?.group?.id) throw new Error("Group  Uuid não encontrado")
-      const response = await client.query("/group/:groupUuid" , "get", { groupUuid: item.group.id }, undefined)
+      const response = await client.query("/group/:groupUuid" , "get", { groupUuid: item.group.id })
       if (!isSuccessResponse(response)) throw new Error(response.message)
       return response.data
     },

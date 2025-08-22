@@ -11,7 +11,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
     queryKey: ['item', params.id],
     queryFn: async () => await client.query('/item/:id', 'get', {
       id: params.id
-    }, undefined)
+    })
   })
 
   if (isFetching) return <p>Carregando...</p>

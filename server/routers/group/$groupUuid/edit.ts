@@ -3,6 +3,7 @@ import { Item } from '@/database/entity/Item'
 import { ItemTag } from '@/database/entity/ItemTag'
 import { Group } from '@/database/entity/Group'
 import { ItemCategory } from '@/database/entity/ItemCategory'
+import { Log } from '@/database'
 import { ItemType, ItemStatus, Role } from '@/database/enums'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasItemPermission } from '@/helper/hasItemPermission'
@@ -106,13 +107,28 @@ export default new Router({
         if (schema.description !== undefined) updateData.description = schema.description
         if (schema.name) updateData.name = schema.name
         if (Object.keys(updateData).length) {
-          await Item.update({ group: { id: groupUuid }  }, updateData)
+          await Item.createQueryBuilder()
+            .update(Item)
+            .set(updateData)
+            .where('groupId = :groupUuid', { groupUuid })
+            .execute()
         }
 
         // Buscar itens atualizados para retornar
         const updatedItems = await Group.findOne({ where: { id: groupUuid }, relations: { items: true, tags: true, category: true } })
 
         const updatedCount = updatedItems?.items.length ?? 0
+
+        // Logs para cada item atualizado no grupo
+        if (updatedItems?.items && Object.keys(updateData).length > 0) {
+          for (const item of updatedItems.items) {
+            await Log.create({
+              code: 'item:updated',
+              data: { id: item.id, ownerId: request.user.id, name: item.name, groupId: groupUuid },
+              user: { id: request.user.id }
+            }).save()
+          }
+        }
         return reply.code(200).send({
           message: `${updatedCount} item(s) do grupo atualizados com sucesso`,
           data: {

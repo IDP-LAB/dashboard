@@ -13,7 +13,7 @@ export default new Router({
       const requestedId = Number(params.id)
 
       // Se for Employee, só pode ver seus próprios dados
-      if (request.user.role === Role.User && request.user.id !== requestedId) {
+      if ([Role.Student, Role.Teacher].includes(request.user.role) && request.user.id !== requestedId) {
         return reply.status(403).send({
           message: 'You can only access your own user data'
         })

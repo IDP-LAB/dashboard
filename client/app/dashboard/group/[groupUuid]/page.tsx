@@ -97,7 +97,7 @@ export default function EditGroupPage() {
   const { data: groupItems, isLoading, error } = useQuery({
     queryKey: ["item-group", groupUuid],
     queryFn: async () => {
-      const response = await client.query("/group/:groupUuid" , "get", { groupUuid }, undefined)
+      const response = await client.query("/group/:groupUuid" , "get", { groupUuid })
       if (!isSuccessResponse(response)) throw new Error(response.message)
       return response.data as GroupItem[]
     },
@@ -108,7 +108,7 @@ export default function EditGroupPage() {
   const { data: groupFiles, isLoading: isLoadingFiles } = useQuery({
     queryKey: ["group-files", groupUuid],
     queryFn: async () => {
-      const response = await client.query("/group/:groupUuid/files" , "get", { groupUuid }, undefined)
+      const response = await client.query("/group/:groupUuid/files" , "get", { groupUuid })
       if (!isSuccessResponse(response)) throw new Error(response.message)
       return response.data
     },
@@ -199,7 +199,7 @@ export default function EditGroupPage() {
   // Mutação para deletar arquivo
   const deleteFileMutation = useMutation({
     mutationFn: async (fileId: number) => {
-      const response = await client.query("/group/:groupUuid/files/:fileId" , "delete", { groupUuid, fileId }, undefined)
+      const response = await client.query("/group/:groupUuid/files/:fileId" , "delete", { groupUuid, fileId })
       if (!isSuccessResponse(response)) throw new Error(response.message)
       return response
     },

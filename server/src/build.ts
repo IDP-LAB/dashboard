@@ -170,11 +170,15 @@ class Build {
         const authType = rd.authenticate
           ? `FirstParameter<typeof ${rd.name}>`
           : 'undefined'
+        const queryType = rd.query?.[methodType]?.length
+          ? `{ ${rd.query[methodType]!.map(k => `${k}: string | number | undefined`).join('; ')} }`
+          : 'undefined'
 
         methodDefinitionsForCurrentPath.push(`    ${methodType}: {
       response: ${responseType},
       request: ${requestType},
-      auth: ${authType}
+      auth: ${authType},
+      query: ${queryType}
     }`)
       }
     }

@@ -7,6 +7,7 @@ import { getLockingOptions } from '@/database/locking'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasProjectPermission } from '@/helper/hasProjectPermission'
 import { z } from 'zod'
+import { Log } from '@/database'
 
 export default new Router({
   name: 'Consume Item By Group',
@@ -64,6 +65,12 @@ export default new Router({
 
           return { item: itemToConsume, movement }
         })
+
+        await Log.create({
+          code: 'item:updated',
+          data: { id: result.item.id, ownerId: request.user.id, name: result.item.name, projectId: result.item.project?.id },
+          user: { id: request.user.id }
+        }).save()
 
         return reply.code(200).send({ message: 'Item marcado como consumido com sucesso.', data: result.item })
       } catch (error) {

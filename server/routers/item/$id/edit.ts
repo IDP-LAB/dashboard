@@ -1,6 +1,7 @@
 // server/routers/item/$id/edit.ts
 import { Router } from '@/controllers/router'
 import { Item } from '@/database/entity/Item' // É necessário importar a entidade Item
+import { Log } from '@/database'
 import { ItemStatus, ItemType, Role } from '@/database/enums'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasItemPermission } from '@/helper/hasItemPermission'
@@ -55,6 +56,12 @@ export default new Router({
         // Atualizar apenas o item individual
         Object.assign(item, schema)
         const result = await item.save()
+
+        await Log.create({
+          code: 'item:updated',
+          data: { id: result.id, ownerId: request.user.id, name: result.name },
+          user: { id: request.user.id }
+        }).save()
 
         return reply.code(200).send({
           message: 'Item atualizado com sucesso',

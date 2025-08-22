@@ -48,7 +48,7 @@ export function TagMultiCombobox({
   const { data: tagsData } = useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const response = await client.query("/tag", "get", undefined)
+      const response = await client.query("/tag", "get")
       if (!isSuccessResponse(response)) return []
       return response.data as TagOption[]
     },

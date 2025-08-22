@@ -20,3 +20,35 @@ export function bytesToSizeString(byteLength: number, decimals: number = 2): str
 
   return `${formatted} ${sizes[i]}`
 }
+
+/**
+ * Converte uma string de duração (ex: "1D", "12h", "30m") em um objeto Date.
+ * @param duration A string de duração.
+ * @returns Um objeto Date representando a data de expiração, ou null se a duração for nula.
+ */
+export function parseDuration(duration?: string): Date | undefined {
+  if (!duration) return
+
+  const value = parseInt(duration.slice(0, -1), 10)
+  const unit = duration.slice(-1).toLowerCase()
+
+  if (isNaN(value)) return
+
+  const date = new Date()
+
+  switch (unit) {
+  case 'd':
+    date.setDate(date.getDate() + value)
+    break
+  case 'h':
+    date.setHours(date.getHours() + value)
+    break
+  case 'm':
+    date.setMinutes(date.getMinutes() + value)
+    break
+  default:
+    return // Unidade inválida
+  }
+
+  return date
+}

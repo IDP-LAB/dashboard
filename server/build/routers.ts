@@ -2,6 +2,7 @@ import AddGroupQuantity from '../routers/group/$groupUuid/add-quantity.js'
 import APIRoot from '../routers/index.js'
 import Categories from '../routers/category/index.js'
 import ConsumeItemByGroup from '../routers/item/consume.js'
+import CreateInvite from '../routers/invite/create.js'
 import CreateItem from '../routers/item/create.js'
 import CreateProject from '../routers/project/create.js'
 import CreateUser from '../routers/users/create.js'
@@ -22,6 +23,9 @@ import GetItem from '../routers/item/$id/get.js'
 import GetProject from '../routers/project/$id/get.js'
 import GetUser from '../routers/users/$id/get.js'
 import GetUserProfile from '../routers/users/profile.js'
+import InviteById from '../routers/invite/$id/index.js'
+import InviteClaim from '../routers/invite/$code.js'
+import Invites from '../routers/invite/index.js'
 import ListItems from '../routers/item/index.js'
 import ListLogs from '../routers/logs/index.js'
 import ListProjects from '../routers/project/index.js'
@@ -45,6 +49,10 @@ export const routers = {
   '/group/:groupUuid/files': [GetGroupFiles, UploadGroupFiles],
   '/group/:groupUuid/files/:fileId': DeleteGroupFile,
   '/group/:groupUuid/files/:fileId/download': DownloadGroupFile,
+  '/invite': Invites,
+  '/invite/:code': InviteClaim,
+  '/invite/create': CreateInvite,
+  '/invite/id/:id': InviteById,
   '/item': [CreateItem, ListItems],
   '/item/:id': [DeleteItem, EditItem, GetItem],
   '/item/consume': ConsumeItemByGroup,

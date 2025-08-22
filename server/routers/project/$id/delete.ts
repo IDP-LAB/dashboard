@@ -1,5 +1,6 @@
 import { Router } from '@/controllers/router'
 import { Role } from '@/database/enums'
+import { Log } from '@/database'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasProjectPermission } from '@/helper/hasProjectPermission'
 import { z } from 'zod'
@@ -39,7 +40,14 @@ export default new Router({
         })
       }
       
+      const deletedProject = { id: project.id, name: project.name }
       await project.remove()
+
+      await Log.create({
+        code: 'project:deleted',
+        data: { id: deletedProject.id, name: deletedProject.name, ownerId: request.user.id },
+        user: { id: request.user.id }
+      }).save()
 
       return reply.code(200).send({
         message: 'Project deleted successfully',

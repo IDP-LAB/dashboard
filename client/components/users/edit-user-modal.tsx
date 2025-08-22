@@ -11,9 +11,12 @@ import { Separator } from "@/components/ui/separator"
 import { User, Mail, Shield, UserCheck, Save, X, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 import { Label } from "@/components/ui/label"
+import { useAPI } from "@/hooks/useAPI"
+import { isSuccessResponse } from "@/lib/response"
+import { useMutation } from "@tanstack/react-query"
 
 interface User {
-  id: string
+  id: number
   name: string
   email: string
   userType: "student" | "teacher" | "admin"
@@ -29,6 +32,7 @@ interface EditUserModalProps {
 }
 
 export function EditUserModal({ user, onClose, onUserUpdated }: EditUserModalProps) {
+  const { client } = useAPI()
   const [formData, setFormData] = useState({
     name: user.name,
     email: user.email,
@@ -37,6 +41,25 @@ export function EditUserModal({ user, onClose, onUserUpdated }: EditUserModalPro
   })
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const payload: Record<string, any> = { name: formData.name }
+      // username no backend é editável, mas mantemos email separado
+      payload.username = formData.email.split('@')[0]
+      const response = await client.query('/users/:id', 'put', { id: String(user.id) }, payload)
+      if (!isSuccessResponse(response)) throw new Error(response.message)
+      return response
+    },
+    onSuccess: () => {
+      toast.success('Usuário atualizado com sucesso!')
+      onUserUpdated({ ...user, name: formData.name, email: formData.email, userType: formData.userType, status: formData.status })
+      onClose()
+    },
+    onError: (error: unknown) => {
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar usuário')
+    }
+  })
 
   // Função para validar formulário
   const validateForm = () => {
@@ -76,23 +99,7 @@ export function EditUserModal({ user, onClose, onUserUpdated }: EditUserModalPro
     setIsLoading(true)
     
     try {
-      // Simular chamada da API
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Criar usuário atualizado
-      const updatedUser: User = {
-        ...user,
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        userType: formData.userType,
-        status: formData.status
-      }
-      
-      // Chamar callback de atualização
-      onUserUpdated(updatedUser)
-      
-      toast.success("Usuário atualizado com sucesso!")
-      onClose()
+      await updateMutation.mutateAsync()
     } catch (error) {
       toast.error("Erro ao atualizar usuário. Tente novamente.")
     } finally {
@@ -187,7 +194,7 @@ export function EditUserModal({ user, onClose, onUserUpdated }: EditUserModalPro
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span>ID:</span>
-              <span className="font-mono bg-muted px-2 py-1 rounded text-xs">{user.id}</span>
+              <span className="font-mono bg-muted px-2 py-1 rounded text-xs">{String(user.id)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span>Criado em:</span>

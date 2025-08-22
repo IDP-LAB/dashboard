@@ -47,6 +47,14 @@ interface DataTableProps<TData, TValue> {
   isLoading?: boolean
   title?: string
   description?: string
+  serverPagination?: {
+    pageIndex: number // zero-based
+    pageSize: number
+    total: number
+    totalPages: number
+    onPageChange: (pageIndex: number) => void
+    onPageSizeChange: (pageSize: number) => void
+  }
 }
 
 /**
@@ -64,6 +72,7 @@ export function DataTable<TData, TValue>({
   isLoading = false,
   title,
   description,
+  serverPagination,
 }: DataTableProps<TData, TValue>) {
   // Estados locais da tabela
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -95,12 +104,18 @@ export function DataTable<TData, TValue>({
       columnVisibility,
       rowSelection,
       globalFilter,
+      ...(serverPagination
+        ? { pagination: { pageIndex: serverPagination.pageIndex, pageSize: serverPagination.pageSize } }
+        : {}),
     },
     initialState: {
       pagination: {
         pageSize: filters.pageSize,
       },
     },
+    ...(serverPagination
+      ? { manualPagination: true, pageCount: serverPagination.totalPages }
+      : {}),
   })
 
   // Função para exportar dados
@@ -312,14 +327,19 @@ export function DataTable<TData, TValue>({
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium">Linhas por página</p>
               <Select
-                value={`${table.getState().pagination.pageSize}`}
+                value={`${(serverPagination ? serverPagination.pageSize : table.getState().pagination.pageSize)}`}
                 onValueChange={(value) => {
-                  table.setPageSize(Number(value))
-                  setFilter("pageSize", Number(value))
+                  const size = Number(value)
+                  if (serverPagination) {
+                    serverPagination.onPageSizeChange(size)
+                  } else {
+                    table.setPageSize(size)
+                  }
+                  setFilter("pageSize", size)
                 }}
               >
                 <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue placeholder={table.getState().pagination.pageSize} />
+                  <SelectValue placeholder={(serverPagination ? serverPagination.pageSize : table.getState().pagination.pageSize)} />
                 </SelectTrigger>
                 <SelectContent side="top">
                   {[10, 20, 30, 40, 50].map((pageSize) => (
@@ -332,8 +352,10 @@ export function DataTable<TData, TValue>({
             </div>
 
             {/* Informações da página */}
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+            <div className="flex w-[140px] items-center justify-center text-sm font-medium">
+              {serverPagination
+                ? <>Página {serverPagination.pageIndex + 1} de {serverPagination.totalPages}</>
+                : <>Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}</>}
             </div>
 
             {/* Botões de navegação */}
@@ -341,8 +363,8 @@ export function DataTable<TData, TValue>({
               <Button
                 variant="outline"
                 className="h-8 w-8 p-0"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() => (serverPagination ? serverPagination.onPageChange(0) : table.setPageIndex(0))}
+                disabled={serverPagination ? serverPagination.pageIndex <= 0 : !table.getCanPreviousPage()}
               >
                 <span className="sr-only">Ir para primeira página</span>
                 {"<<"}
@@ -350,8 +372,8 @@ export function DataTable<TData, TValue>({
               <Button
                 variant="outline"
                 className="h-8 w-8 p-0"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() => (serverPagination ? serverPagination.onPageChange(Math.max(0, serverPagination.pageIndex - 1)) : table.previousPage())}
+                disabled={serverPagination ? serverPagination.pageIndex <= 0 : !table.getCanPreviousPage()}
               >
                 <span className="sr-only">Ir para página anterior</span>
                 {"<"}
@@ -359,8 +381,8 @@ export function DataTable<TData, TValue>({
               <Button
                 variant="outline"
                 className="h-8 w-8 p-0"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                onClick={() => (serverPagination ? serverPagination.onPageChange(Math.min(serverPagination.totalPages - 1, serverPagination.pageIndex + 1)) : table.nextPage())}
+                disabled={serverPagination ? serverPagination.pageIndex >= serverPagination.totalPages - 1 : !table.getCanNextPage()}
               >
                 <span className="sr-only">Ir para próxima página</span>
                 {">"}
@@ -368,8 +390,8 @@ export function DataTable<TData, TValue>({
               <Button
                 variant="outline"
                 className="h-8 w-8 p-0"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
+                onClick={() => (serverPagination ? serverPagination.onPageChange(serverPagination.totalPages - 1) : table.setPageIndex(table.getPageCount() - 1))}
+                disabled={serverPagination ? serverPagination.pageIndex >= serverPagination.totalPages - 1 : !table.getCanNextPage()}
               >
                 <span className="sr-only">Ir para última página</span>
                 {">>"}
@@ -381,14 +403,15 @@ export function DataTable<TData, TValue>({
         {/* === INFORMAÇÕES ADICIONAIS === */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4 pt-4 border-t text-xs text-muted-foreground">
           <div>
-            Mostrando {table.getRowModel().rows.length} de {table.getFilteredRowModel().rows.length} resultados
-            {globalFilter && ` para "${globalFilter}"`}
+            {serverPagination
+              ? <>Mostrando página {serverPagination.pageIndex + 1} de {serverPagination.totalPages} • Total: {serverPagination.total} registros{globalFilter && ` para "${globalFilter}"`}</>
+              : <>Mostrando {table.getRowModel().rows.length} de {table.getFilteredRowModel().rows.length} resultados{globalFilter && ` para "${globalFilter}"`}</>}
           </div>
           <div className="flex items-center gap-4">
             {table.getFilteredSelectedRowModel().rows.length > 0 && (
               <Badge variant="secondary">{table.getFilteredSelectedRowModel().rows.length} selecionados</Badge>
             )}
-            <span>Total: {data.length} registros</span>
+            <span>Total: {serverPagination ? serverPagination.total : data.length} registros</span>
           </div>
         </div>
       </CardContent>

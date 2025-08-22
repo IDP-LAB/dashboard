@@ -1,5 +1,6 @@
 import { Router } from '@/controllers/router'
 import { User } from '@/database/entity/User'
+import { Log } from '@/database'
 import { Role } from '@/database/enums'
 import { z } from 'zod'
 
@@ -21,9 +22,9 @@ export default new Router({
   methods: {
     async post({ reply, schema, request }) {
       // Verificar permissões baseadas no role do usuário autenticado
-      if (request.user.role === Role.Administrator && schema.role !== Role.User) {
+      if (request.user.role !== Role.Administrator) {
         return reply.status(403).send({
-          message: 'Administradores só podem criar usuários com função de Employee.',
+          message: 'Administradores só podem criar usuários com função de Student.',
         })
       }
 
@@ -40,6 +41,12 @@ export default new Router({
         .create({ ...schema })
         .setPassword(schema.password))
         .save()
+
+      await Log.create({
+        code: 'user:created',
+        data: { id: user.id, ownerId: request.user.id, name: user.name, username: user.username, email: user.email, role: user.role },
+        user: { id: request.user.id }
+      }).save()
 
       return reply.code(201).send({
         message: 'Usuário criado com sucesso!',

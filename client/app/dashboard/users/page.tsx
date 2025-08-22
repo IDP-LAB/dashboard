@@ -1,91 +1,107 @@
 "use client"
 
-import { useState } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from "@/components/ui/data-table"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, Plus, UserPlus, Users, UserCheck, Shield, User, Eye, Edit, Trash2, Calendar, Clock } from "lucide-react"
-import { toast } from "sonner"
-import { InviteUserModal } from "@/components/users/invite-user-modal"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CreateUserModal } from "@/components/users/create-user-modal"
-import { UserDetailsModal } from "@/components/users/user-details-modal"
 import { EditUserModal } from "@/components/users/edit-user-modal"
+import { InviteUserModal } from "@/components/users/invite-user-modal"
+import { UserDetailsModal } from "@/components/users/user-details-modal"
+import { useAPI } from "@/hooks/useAPI"
+import { isSuccessResponse } from "@/lib/response"
+import { ColumnDef } from "@tanstack/react-table"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { Edit, Eye, MoreHorizontal, Plus, Shield, Trash2, User, UserPlus } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useMemo, useState } from "react"
+import { Role, type User as ServerUser } from "server"
 
-// Tipos para usuários
-interface User {
-  id: string
+// Tipos para UI (mapeados do servidor)
+interface UIUser {
+  id: number
   name: string
   email: string
+  username: string
   userType: "student" | "teacher" | "admin"
   status: "active" | "inactive" | "pending"
   createdAt: string
   lastLogin?: string
-  avatar?: string
 }
 
-// Dados mockados para demonstração
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "João Silva",
-    email: "joao.silva@email.com",
-    userType: "student",
+function mapRoleToUserType(role: Role): UIUser["userType"] {
+  if (role === Role.Administrator) return "admin"
+  if (role === Role.Teacher) return "teacher"
+  return "student"
+}
+
+function mapServerUserToUI(user: ServerUser): UIUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    username: user.username,
+    userType: mapRoleToUserType(user.role as Role),
     status: "active",
-    createdAt: "2024-01-15",
-    lastLogin: "2024-01-20",
-  },
-  {
-    id: "2",
-    name: "Maria Santos",
-    email: "maria.santos@email.com",
-    userType: "teacher",
-    status: "active",
-    createdAt: "2024-01-10",
-    lastLogin: "2024-01-19",
-  },
-  {
-    id: "3",
-    name: "Pedro Costa",
-    email: "pedro.costa@email.com",
-    userType: "student",
-    status: "pending",
-    createdAt: "2024-01-18",
-  },
-  {
-    id: "4",
-    name: "Ana Oliveira",
-    email: "ana.oliveira@email.com",
-    userType: "admin",
-    status: "active",
-    createdAt: "2024-01-05",
-    lastLogin: "2024-01-20",
-  },
-]
+    createdAt: (user as any).createdAt ?? new Date().toISOString(),
+    lastLogin: undefined,
+  }
+}
 
 export default function UsersPage() {
+  const { client } = useAPI()
+  const queryClient = useQueryClient()
+
   // Estados para controlar os modais
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [users, setUsers] = useState<User[]>(mockUsers)
+  const [selectedUser, setSelectedUser] = useState<UIUser | null>(null)
+  // Paginação servidor
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+
+  const [roleFilter, setRoleFilter] = useState<"all" | "administrator" | "teacher" | "student">("all")
+
+  const { data, isFetching, refetch } = useQuery({
+    queryKey: ["users", pageIndex, pageSize, roleFilter],
+    queryFn: async () => {
+      const query: Record<string, string | number> = { page: pageIndex + 1, pageSize }
+      if (roleFilter !== "all") query.role = roleFilter
+      const response = await client.query(`/users`, "get", { query })
+      if (!isSuccessResponse(response)) throw new Error(response.message)
+      return response
+    }
+  })
+
+  const users: UIUser[] = useMemo(() => ((data?.data as any)?.items ?? []).map(mapServerUserToUI), [data])
+  const roleStats = (data?.data as any)?.roles as { administrator: number; teacher: number; student: number; total: number } | undefined
 
   // Funções para gerenciar modais
   const openInviteModal = () => setIsInviteModalOpen(true)
   const openCreateModal = () => setIsCreateModalOpen(true)
   
-  const openDetailsModal = (user: User) => {
-    setSelectedUser(user)
+  const openDetailsModal = async (uiUser: UIUser) => {
+    // Buscar dados atualizados do usuário
+    const response = await client.query('/users/:id', 'get', { id: String(uiUser.id) })
+    if (isSuccessResponse<ServerUser>(response)) {
+      setSelectedUser(mapServerUserToUI(response.data as unknown as ServerUser))
+    } else {
+      setSelectedUser(uiUser)
+    }
     setIsDetailsModalOpen(true)
   }
 
-  const openEditModal = (user: User) => {
-    setSelectedUser(user)
+  const openEditModal = async (uiUser: UIUser) => {
+    const response = await client.query('/users/:id', 'get', { id: String(uiUser.id) })
+    if (isSuccessResponse<ServerUser>(response)) {
+      setSelectedUser(mapServerUserToUI(response.data as unknown as ServerUser))
+    } else {
+      setSelectedUser(uiUser)
+    }
     setIsEditModalOpen(true)
   }
 
@@ -98,23 +114,33 @@ export default function UsersPage() {
   }
 
   // Callbacks para os modais
-  const handleUserCreated = (newUser: User) => {
-    setUsers(prev => [...prev, newUser])
+  const handleUserCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ["users"] })
   }
 
-  const handleUserUpdated = (updatedUser: User) => {
-    setUsers(prev => prev.map(user => user.id === updatedUser.id ? updatedUser : user))
+  const handleUserUpdated = () => {
+    queryClient.invalidateQueries({ queryKey: ["users"] })
   }
 
   // Função para deletar usuário
-  const handleDeleteUser = (userId: string) => {
+  const deleteMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await client.query('/users/:id', 'delete', { id: String(userId) })
+      if (!isSuccessResponse(res)) throw new Error(res.message)
+      return res
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+    }
+  })
+  const handleDeleteUser = (userId: number) => {
     if (confirm("Tem certeza que deseja deletar este usuário?")) {
-      setUsers(users.filter(user => user.id !== userId))
+      deleteMutation.mutate(userId)
     }
   }
 
   // Função para obter cor do status
-  const getStatusColor = (status: User["status"]) => {
+  const getStatusColor = (status: UIUser["status"]) => {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
@@ -128,7 +154,7 @@ export default function UsersPage() {
   }
 
   // Função para obter label do status
-  const getStatusLabel = (status: User["status"]) => {
+  const getStatusLabel = (status: UIUser["status"]) => {
     switch (status) {
       case "active":
         return "Ativo"
@@ -142,7 +168,7 @@ export default function UsersPage() {
   }
 
   // Função para obter ícone do tipo de usuário
-  const getUserTypeIcon = (userType: User["userType"]) => {
+  const getUserTypeIcon = (userType: UIUser["userType"]) => {
     switch (userType) {
       case "admin":
         return <Shield className="h-4 w-4" />
@@ -156,7 +182,7 @@ export default function UsersPage() {
   }
 
   // Função para obter label do tipo de usuário
-  const getUserTypeLabel = (userType: User["userType"]) => {
+  const getUserTypeLabel = (userType: UIUser["userType"]) => {
     switch (userType) {
       case "admin":
         return "Administrador"
@@ -170,7 +196,7 @@ export default function UsersPage() {
   }
 
   // Definição das colunas da tabela
-  const columns: ColumnDef<User>[] = [
+  const columns: ColumnDef<UIUser>[] = [
     {
       accessorKey: "name",
       header: "Nome",
@@ -193,7 +219,7 @@ export default function UsersPage() {
       accessorKey: "userType",
       header: "Tipo",
       cell: ({ row }) => {
-        const userType = row.getValue("userType") as User["userType"]
+        const userType = row.getValue("userType") as UIUser["userType"]
         return (
           <div className="flex items-center gap-2">
             {getUserTypeIcon(userType)}
@@ -206,7 +232,7 @@ export default function UsersPage() {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
-        const status = row.getValue("status") as User["status"]
+        const status = row.getValue("status") as UIUser["status"]
         return (
           <Badge className={getStatusColor(status)}>
             {getStatusLabel(status)}
@@ -268,7 +294,7 @@ export default function UsersPage() {
     },
   ]
 
-  // Opções de filtro para a tabela
+  // Opções de filtro para a tabela (removido filtro de status)
   const filterOptions = [
     {
       key: "userType",
@@ -277,15 +303,6 @@ export default function UsersPage() {
         { label: "Aluno", value: "student" },
         { label: "Professor", value: "teacher" },
         { label: "Administrador", value: "admin" },
-      ],
-    },
-    {
-      key: "status",
-      label: "Status",
-      options: [
-        { label: "Ativo", value: "active" },
-        { label: "Inativo", value: "inactive" },
-        { label: "Pendente", value: "pending" },
       ],
     },
   ]
@@ -313,25 +330,14 @@ export default function UsersPage() {
       </div>
 
       {/* Estatísticas rápidas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Usuários Ativos</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {users.filter(user => user.status === "active").length}
-            </div>
+            <div className="text-2xl font-bold">{roleStats?.total ?? users.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -340,9 +346,7 @@ export default function UsersPage() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {users.filter(user => user.userType === "teacher").length}
-            </div>
+            <div className="text-2xl font-bold">{roleStats?.teacher ?? users.filter(user => user.userType === "teacher").length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -351,14 +355,26 @@ export default function UsersPage() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {users.filter(user => user.userType === "student").length}
-            </div>
+            <div className="text-2xl font-bold">{roleStats?.student ?? users.filter(user => user.userType === "student").length}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabela de usuários */}
+      {/* Filtro por role + Tabela de usuários */}
+      <div className="flex items-center justify-end mb-2">
+        <Select value={roleFilter} onValueChange={(v: any) => { setRoleFilter(v); setPageIndex(0) }}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Filtrar por função" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as funções</SelectItem>
+            <SelectItem value="administrator">Administrador</SelectItem>
+            <SelectItem value="teacher">Professor</SelectItem>
+            <SelectItem value="student">Aluno</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <DataTable
         columns={columns}
         data={users}
@@ -367,6 +383,16 @@ export default function UsersPage() {
         filterOptions={filterOptions}
         title="Lista de Usuários"
         description="Visualize e gerencie todos os usuários do sistema"
+        isLoading={isFetching}
+        onRefresh={refetch}
+        serverPagination={{
+          pageIndex,
+          pageSize,
+          total: (data?.metadata as any)?.total ?? users.length,
+          totalPages: (data?.metadata as any)?.totalPages ?? 1,
+          onPageChange: setPageIndex,
+          onPageSizeChange: (size) => { setPageSize(size); setPageIndex(0) }
+        }}
       />
 
       {/* Modais */}
@@ -380,8 +406,8 @@ export default function UsersPage() {
         <DialogContent className="max-w-2xl">
           <CreateUserModal 
             onClose={closeAllModals} 
-            onUserCreated={(user) => {
-              handleUserCreated(user)
+            onUserCreated={() => {
+              handleUserCreated()
               closeAllModals()
             }}
           />
@@ -392,7 +418,7 @@ export default function UsersPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedUser && (
             <UserDetailsModal 
-              user={selectedUser} 
+              user={selectedUser as any} 
               onClose={closeAllModals} 
             />
           )}
@@ -403,10 +429,10 @@ export default function UsersPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedUser && (
             <EditUserModal 
-              user={selectedUser} 
+              user={selectedUser as any} 
               onClose={closeAllModals}
-              onUserUpdated={(updatedUser) => {
-                handleUserUpdated(updatedUser)
+              onUserUpdated={() => {
+                handleUserUpdated()
                 closeAllModals()
               }}
             />

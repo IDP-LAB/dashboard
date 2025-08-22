@@ -31,7 +31,8 @@ export type ListResponse = {
 export type SucessData<TData> = {
   message: string
   data: TData
-} & (TData extends unknown[] ? { metadata: ListResponse } : object)
+  metadata?: ListResponse
+}
 
 export type TReplySuccess<TData> = {
   [Status in typeof CodesSuccess[number]]: SucessData<TData>

@@ -1,5 +1,5 @@
 import { addYears, endOfDay, endOfHour, endOfMonth, startOfDay, startOfHour, startOfMonth, subYears } from 'date-fns'
-import { Between, Repository, type FindOptionsOrder, type FindOptionsRelations, type FindOptionsWhere, type ObjectLiteral } from 'typeorm'
+import { Between, Repository, type FindOptionsOrder, type FindOptionsRelations, type FindOptionsWhere, type ObjectLiteral, type FindOptionsSelect } from 'typeorm'
 import { z } from 'zod'
 
 export const AfterDate = (date: Date) => Between(date, addYears(date, 100))
@@ -41,6 +41,7 @@ export async function paginate<T extends ObjectLiteral>({
   orderBy,
   orderDirection = 'DESC',
   day,
+  select,
   ...args
 }: {
     repository: Repository<T>
@@ -52,11 +53,11 @@ export async function paginate<T extends ObjectLiteral>({
     order?: FindOptionsOrder<T>
     orderBy?: string
     orderDirection?: 'ASC' | 'DESC'
+    select?: FindOptionsSelect<T>
   } & FindOptionsWhere<T>
 ) {
   const targetDate = day ? new Date(day) : new Date()
 
-  console.log(args)
   
   let start: Date | undefined = undefined
   let end: Date | undefined = undefined
@@ -83,26 +84,8 @@ export async function paginate<T extends ObjectLiteral>({
     ...args,
   }
 
-  // relations defaults from metadata
-  const defaultRelations = repository.metadata.relations
-    .map(rel => rel.propertyName)
-
-  // merge defaultRelations with provided relations
-  let mergedRelations: FindOptionsRelations<T> | string[]
-
-  if (relations) {
-    if (Array.isArray(relations)) {
-      mergedRelations = Array.from(new Set([...defaultRelations, ...relations]))
-    } else {
-      // convert defaultRelations to object tree
-      const defaultsTree = defaultRelations.reduce((acc, rel) => ({ ...acc, [rel]: true }), {} as Record<string, boolean>)
-      mergedRelations = { ...defaultsTree, ...relations }
-    }
-  } else {
-    mergedRelations = defaultRelations
-  }
-
-  console.log(mergedRelations)
+  // Do not include relations by default to avoid heavy loads; use exactly what's provided
+  const mergedRelations: FindOptionsRelations<T> | string[] | undefined = relations
 
   // Configurar ordenação
   const finalOrder = {
@@ -113,6 +96,7 @@ export async function paginate<T extends ObjectLiteral>({
   const [data, total] = await repository.findAndCount({
     where: whereCondition,
     relations: mergedRelations,
+    select,
     skip: (page - 1) * pageSize,
     take: pageSize,
     order: finalOrder

@@ -22,7 +22,7 @@ export async function registerUsers() {
       username: 'user',
       email: 'user@user.com',
       language: 'pt-BR',
-      role: Role.User,
+      role: Role.Student,
     })
       .setPassword('user1234'))
       .save()
@@ -41,7 +41,7 @@ export async function registerUsers() {
       username: faker.internet.userName().toLowerCase(),
       email: faker.internet.email().toLowerCase(),
       language: faker.helpers.arrayElement(['pt-BR', 'en-US']),
-      role: Role.User,
+      role: Role.Student,
       password: 'password123'
     }))
 

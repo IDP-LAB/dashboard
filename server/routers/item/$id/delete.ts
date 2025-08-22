@@ -1,6 +1,7 @@
 import { Router } from '@/controllers/router'
 import { Item } from '@/database/entity/Item'
 import { File } from '@/database/entity/File'
+import { Log } from '@/database'
 import { ItemType, Role } from '@/database/enums'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasItemPermission } from '@/helper/hasItemPermission'
@@ -45,7 +46,14 @@ export default new Router({
 
       try {
         // Deletar apenas o item individual
+        const deletedSnapshot = { id: item.id, name: item.name, groupId: item.group?.id }
         await Item.remove([item])
+
+        await Log.create({
+          code: 'item:deleted',
+          data: { id: deletedSnapshot.id, name: deletedSnapshot.name, group: String(deletedSnapshot.groupId ?? ''), ownerId: request.user.id },
+          user: { id: request.user.id }
+        }).save()
 
         return reply.code(200).send({
           message: `Item "${item.name}" deletado com sucesso`,

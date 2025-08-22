@@ -7,6 +7,7 @@ import { getLockingOptions } from '@/database/locking'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasProjectPermission } from '@/helper/hasProjectPermission'
 import { z } from 'zod'
+import { Log } from '@/database'
 
 export default new Router({
   name: 'Find and Transfer Item',
@@ -67,6 +68,13 @@ export default new Router({
 
           return { item: itemToTransfer, movement }
         })
+
+        // Log padronizado: item transferido (atualização)
+        await Log.create({
+          code: 'item:updated',
+          data: { id: result.item.id, ownerId: request.user.id, name: result.item.name, projectId: project.id },
+          user: { id: request.user.id }
+        }).save()
 
         return reply.code(200).send({
           message: 'Item transferido com sucesso.',

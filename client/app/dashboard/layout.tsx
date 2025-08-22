@@ -23,7 +23,7 @@ export default function DashLayout({
   const { isLoading, isError } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const response = await client.query('/users/profile', 'get', undefined)
+      const response = await client.query('/users/profile', 'get')
 
       if (!isSuccessResponse(response)) throw new Error("Falha ao validar perfil.")
       

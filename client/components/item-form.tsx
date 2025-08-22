@@ -124,7 +124,7 @@ export function ItemForm({
     queryKey: ["group-files", effectiveGroupUuid],
     queryFn: async () => {
       if (!effectiveGroupUuid) return []
-      const response = await client.query("/group/:groupUuid/files" , "get", { groupUuid: effectiveGroupUuid }, undefined)
+      const response = await client.query("/group/:groupUuid/files" , "get", { groupUuid: effectiveGroupUuid })
       if (!isSuccessResponse(response)) return []
       return response.data
     },

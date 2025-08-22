@@ -21,6 +21,7 @@ type RouterShape = {
   response: unknown
   request?: unknown
   auth?: unknown
+  query?: unknown
 }
 
 type QueryArgs<
@@ -32,12 +33,15 @@ type QueryArgs<
     ? [
         params: ExtractRouteParams<Path>,
         ...(Router extends { request: infer Req }
-          ? [request: Req]
+          ? (undefined extends Req ? [] : [request: Req])
           : [])
       ]
     : Router extends { request: infer Req }
-      ? [request: Req]
-      : [])
+      ? (undefined extends Req ? [] : [request: Req])
+      : []),
+  ...(Router extends { query: infer Q }
+    ? [options?: { query?: Record<string, string | number | undefined> }]
+    : [options?: { query?: Record<string, string | number | undefined> }])
 ]
 
 type ExtractSuccessData<T> = T extends { 200: SucessData<infer U> } | { 201: SucessData<infer U> } ? U : never
@@ -176,12 +180,14 @@ export class Client<Routers extends Record<string, Record<string, RouterShape>>>
     path: Path,
     method: Method,
     formData: FormData,
-    params?: Record<string, string | number>
+    params?: Record<string, string | number>,
+    options?: { query?: Record<string, string | number | undefined> }
   ): Promise<ErrorResponse | ZodResponse | SuccessResponse<ExtractSuccessData<Router['response']>>> {
     const config: AxiosRequestConfig = {
       url: this.replacePathParams(String(path), params),
       method: String(method).toUpperCase(),
       data: formData,
+      params: options?.query as Record<string, string | number | undefined> | undefined,
       headers: {
         // Não definir Content-Type para FormData, deixar o axios definir automaticamente
       }
@@ -233,14 +239,23 @@ export class Client<Routers extends Record<string, Record<string, RouterShape>>>
     ...args: QueryArgs<Path, Method, Router>
   ): Promise<ErrorResponse | ZodResponse | SuccessResponse<ExtractSuccessData<Router['response']>>> {
     const hasParams = String(path).includes(':')
-    const params = hasParams ? args[0] as Record<string, string | number> : undefined
-    const request = hasParams ? args[1] : args[0]
+    // Detecta options (com chave 'query') no último argumento
+    const maybeOptions = args.length > 0 ? args[args.length - 1] as unknown : undefined
+    const hasOptions = !!(maybeOptions && typeof maybeOptions === 'object' && 'query' in (maybeOptions as Record<string, unknown>))
+    const options = (hasOptions ? maybeOptions : undefined) as { query?: Router['query'] } | undefined
+    const positionalArgsLength = hasOptions ? args.length - 1 : args.length
+    const params = hasParams && positionalArgsLength >= 1
+      ? (args[0] as Record<string, string | number>)
+      : undefined
+    const request = hasParams
+      ? (positionalArgsLength >= 2 ? args[1] : undefined)
+      : (positionalArgsLength >= 1 ? args[0] : undefined)
 
     const config: AxiosRequestConfig = {
       url: this.replacePathParams(String(path), params),
       method: String(method).toUpperCase(),
       // O header de autorização agora é injetado pelo interceptor
-      params: method === 'get' ? Object.assign({}, request) : undefined,
+      params: (options?.query ?? (method === 'get' ? Object.assign({}, request as object) : undefined)) as Record<string, string | number | undefined> | undefined,
     }
 
     // Verificar se é FormData para não usar Object.assign

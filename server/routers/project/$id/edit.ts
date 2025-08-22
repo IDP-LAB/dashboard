@@ -1,5 +1,6 @@
 import { Router } from '@/controllers/router'
 import { ProjectStatus, Role } from '@/database/enums'
+import { Log } from '@/database'
 import { PERMISSIONS } from '@/database/permissions'
 import { hasProjectPermission } from '@/helper/hasProjectPermission'
 import { z } from 'zod'
@@ -42,6 +43,12 @@ export default new Router({
       if (schema.status) project.status = schema.status
 
       const result = await project.save()
+
+      await Log.create({
+        code: 'project:updated',
+        data: { id: result.id, ownerId: request.user.id, name: result.name },
+        user: { id: request.user.id }
+      }).save()
 
       return reply.code(200).send({
         message: 'User updated successfully',
