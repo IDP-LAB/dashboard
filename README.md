@@ -46,7 +46,7 @@ For more details on what the `references` field means, please refer to the [Type
 ```ts
 import { Router } from '@/controllers/router.js'
 
-export default new Router({
+export default new Method({
   name: 'Home',
   description: 'Home API',
   methods: {

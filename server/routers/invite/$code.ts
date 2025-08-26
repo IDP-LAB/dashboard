@@ -1,6 +1,6 @@
-import { Router } from '@/controllers/router'
 import { Log, User } from '@/database'
 import { Invite } from '@/database/entity/Invite'
+import { Router } from '@asterflow/router'
 import z from 'zod'
 
 export default new Router({
@@ -17,16 +17,14 @@ export default new Router({
     })
   },
   methods: {
-    // Validação/consulta de convite por código
-    async get({ request, reply }) {
-      const params = request.params as { code: string }
-      const code = params.code
+    get: async ({ response, url }) => {
+      const code = url.getParams().code
       const invite = await Invite.findOne({ 
         where: { code },
         relations: { users: true }
       })
 
-      if (!invite) return reply.code(404).send({
+      if (!invite) return response.code(404).send({
         message: 'Invitation not found!'
       })
 
@@ -35,19 +33,15 @@ export default new Router({
       const now = new Date()
       const isExpired = invite.expiresAt ? invite.expiresAt.getTime() <= now.getTime() : false
 
-      if (used >= invite.uses) {
-        return reply.code(400).send({
-          message: 'Invitation expired, usage limit reached maximum allowed'
-        })
-      }
+      if (used >= invite.uses) return response.code(400).send({
+        message: 'Invitation expired, usage limit reached maximum allowed'
+      })
 
-      if (isExpired) {
-        return reply.code(400).send({
-          message: 'Invitation expired by time'
-        })
-      }
+      if (isExpired) return response.code(400).send({
+        message: 'Invitation expired by time'
+      })
 
-      return reply.code(200).send({
+      return response.code(200).send({
         message: 'Successfully requesting invitation.',
         data: {
           role: invite.role,
@@ -57,9 +51,8 @@ export default new Router({
         }
       })
     },
-    async post({ request, schema, reply }) {
-      const params = request.params as { code: string }
-      const code = params.code
+    async post({ schema, response, url }) {
+      const code = url.getParams().code
       const invite = await Invite.findOne({ 
         where: {
           code
@@ -69,16 +62,16 @@ export default new Router({
         }
       })
 
-      if (!invite) return reply.code(404).send({
+      if (!invite) return response.code(404).send({
         message: 'Invitation not found!'
       })
 
-      if (invite.emails && !invite.emails.includes(schema.email.toLowerCase())) return reply.code(406).send({
+      if (invite.emails && !invite.emails.includes(schema.email.toLowerCase())) return response.code(406).send({
         message: 'The email address you entered is not on the list of allowed emails.'
       })
 
       if (invite.users.length === invite.uses) {
-        return reply.code(400).send({
+        return response.code(400).send({
           message: 'Invitation expired, usage limit reached maximum allowed'
         })
       }
@@ -88,7 +81,7 @@ export default new Router({
         .orWhere('user.username = :username', { username: schema.username })
         .getOne()
 
-      if (existUser) return reply
+      if (existUser) return response
         .status(422)
         .send({
           message: 'A user with the provided email or username already exists. Please use different credentials.',
@@ -105,7 +98,7 @@ export default new Router({
         user: { id: user.id }
       }).save()
 
-      return reply.code(201).send({
+      return response.code(201).send({
         message: 'User registered successfully!',
         data: {
           id: user.id,

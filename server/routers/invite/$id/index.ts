@@ -1,7 +1,7 @@
-import { Router } from '@/controllers/router'
 import { Role } from '@/database'
 import { Invite } from '@/database/entity/Invite'
 import { parseDuration } from '@/utils/converters'
+import { Router } from '@asterflow/router'
 import z from 'zod'
 
 const updateInviteSchema = z.object({
@@ -16,35 +16,33 @@ const updateInviteSchema = z.object({
 
 export default new Router({
   name: 'InviteById',
-  path: '/invite/id/:id',
+  path: '/invite/id/:id=number',
   description: 'Recupera, atualiza ou remove um convite por id (apenas administradores)'.trim(),
-  authenticate: [Role.Administrator],
+  // authenticate: [Role.Administrator],
   schema: {
     put: updateInviteSchema
   },
   methods: {
-    async get({ reply, request }) {
-      const params = request.params as { id: string }
-      const id = Number(params.id)
+    async get({ response, url }) {
+      const id = url.getParams().id
 
       const invite = await Invite.findOne({ where: { id }, relations: { users: true } })
       if (!invite) {
-        return reply.code(404).send({ message: 'Convite não encontrado' })
+        return response.code(404).send({ message: 'Convite não encontrado' })
       }
 
-      return reply.code(200).send({
+      return response.code(200).send({
         message: 'Convite recuperado com sucesso',
         data: invite
       })
     },
-    async put({ reply, request, schema }) {
-      const params = request.params as { id: string }
-      const id = Number(params.id)
+    async put({ response, schema, url }) {
+      const id = url.getParams().id
 
       try {
         const invite = await Invite.findOne({ where: { id }, relations: { users: true } })
         if (!invite) {
-          return reply.code(404).send({ message: 'Convite não encontrado' })
+          return response.code(404).send({ message: 'Convite não encontrado' })
         }
 
         if (schema.emails) invite.emails = schema.emails
@@ -54,36 +52,33 @@ export default new Router({
 
         const saved = await invite.save()
 
-        return reply.code(200).send({
+        return response.code(200).send({
           message: 'Convite atualizado com sucesso',
           data: saved
         })
       } catch (error) {
-        // eslint-disable-next-line no-console
         console.error('Erro ao atualizar convite:', error)
-        return reply.code(500).send({ message: 'Erro interno do servidor ao atualizar convite' })
+        return response.code(500).send({ message: 'Erro interno do servidor ao atualizar convite' })
       }
     },
-    async delete({ reply, request }) {
-      const params = request.params as { id: string }
-      const id = Number(params.id)
+    async delete({ response, url }) {
+      const id = url.getParams().id
 
       try {
         const invite = await Invite.findOne({ where: { id }, relations: { users: true } })
         if (!invite) {
-          return reply.code(404).send({ message: 'Convite não encontrado' })
+          return response.code(404).send({ message: 'Convite não encontrado' })
         }
 
         await invite.remove()
 
-        return reply.code(200).send({
+        return response.code(200).send({
           message: 'Convite deletado com sucesso',
           data: null
         })
       } catch (error) {
-        // eslint-disable-next-line no-console
         console.error('Erro ao deletar convite:', error)
-        return reply.code(500).send({ message: 'Erro interno do servidor ao deletar convite' })
+        return response.code(500).send({ message: 'Erro interno do servidor ao deletar convite' })
       }
     }
   }

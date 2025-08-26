@@ -2,15 +2,26 @@ import 'dotenv/config'
 import 'env/loader'
 import 'reflect-metadata'
 
-import { Fastify } from './controllers/fastify.js'
+import { AsterFlow } from 'asterflow'
+import { adapters } from '@asterflow/adapter'
+import fs from '@asterflow/fs'
 import Database from './database/dataSource.js'
-import { registerRouter } from './scripts/routers.js'
+import fastify from 'fastify'
+import { routerPath } from './index.js'
 
-const fastify = new Fastify({ port: Number(process.env['PORT']) || 3500, host: '0.0.0.0' })
+const server = fastify()
+const aster = new AsterFlow({
+  driver: adapters.fastify
+}).use(fs, { path: routerPath })
+
 await Database.initialize()
 
 await import('./scripts/register.js')
 
-fastify.config()
-await registerRouter()
-await fastify.listen()
+aster.listen(server, { port: 3500 }, (error, address) => {
+  if (error) {
+    throw error
+  }
+
+  console.log(`Listening ${address}`)
+})

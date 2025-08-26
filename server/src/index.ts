@@ -9,6 +9,8 @@ const cwd = import.meta.filename.endsWith('.ts')
   ? join(__dirname, '../')
   : process.cwd()
 
+export const routerPath = join(cwd, 'routers') 
+
 export const storage = process.env.STORAGE_TYPE === 'memory'
   ? new MemoryStorage()
   : new LocalStorage({

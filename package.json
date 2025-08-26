@@ -28,5 +28,12 @@
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
     "react-day-picker": "^9.8.1"
-  }
+  },
+  "trustedDependencies": [
+    "@tailwindcss/oxide",
+    "esbuild",
+    "msgpackr-extract",
+    "sharp",
+    "unrs-resolver"
+  ]
 }

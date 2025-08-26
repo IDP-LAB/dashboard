@@ -30,6 +30,7 @@ export const paginateSchema = z.object({
   orderDirection: z.enum(['ASC', 'DESC']).optional().default('DESC'),
 })
 export const paginateQuery = ['page', 'pageSize', 'interval', 'day', 'orderBy', 'orderDirection'] as const
+export const paginateStringQuery = 'page=number&pageSize=number&interval=month|day|hour|none&orderBy&orderDirection=ASC|DESC' as const
  
 export async function paginate<T extends ObjectLiteral>({
   repository,
