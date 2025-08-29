@@ -42,6 +42,12 @@ export class Item extends BaseEntity {
     type!: ItemType
   @Column({ type: 'varchar', default: ItemStatus.Available })
     status!: ItemStatus
+  @Index()
+  @Column({ type: 'varchar', nullable: true })
+    assetCode!: string | null
+  @Index()
+  @Column({ type: 'varchar', nullable: true })
+    serial!: string | null
 
   @ManyToOne(() => Project, (project) => project.products, { nullable: true, onDelete: 'SET NULL' })
     project!: Relation<Project> | null
@@ -55,7 +61,5 @@ export class Item extends BaseEntity {
   @UpdateDateColumn()
     updateAt!: string
   @CreateDateColumn()
-    createAt!: string
-
-  // Logs foram movidos para as rotas para padronizar o dono (owner) via request.user
+    createdAt!: string
 }

@@ -228,6 +228,7 @@ export default function InvitesPage() {
         columns={columns}
         data={(data?.data as unknown as Invite[]) ?? []}
         title="Lista de Convites"
+        enableSearch={false}
         description="Visualize e gerencie os convites do sistema"
         isLoading={isFetching}
         onRefresh={refetch}

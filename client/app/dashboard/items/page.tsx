@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
@@ -22,6 +22,8 @@ import { formatCurrency } from "@/lib/formats";
 import { isSuccessResponse } from "@/lib/response";
 import { useSession } from "@/stores/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DataTable } from "@/components/ui/data-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import {
   Edit,
   LayoutGrid,
@@ -46,13 +48,15 @@ interface Item {
   price?: number | null;
   quantity?: number;
   groupUuid?: string; // agora pode vir do backend
-  createAt: string;
+  createdAt: string;
+  assetCode?: string | null;
+  serial?: string | null;
   category?: { id: number; name: string } | null;
   tags?: Array<{ id: number; name: string }>;
 }
 
 // Defina um tamanho de página para ser reutilizado
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 export default function ItemsPage() {
   const router = useRouter();
@@ -61,10 +65,12 @@ export default function ItemsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const userId = useSession((state) => state.user?.id || "guest");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [orderDirection, setOrderDirection] = useState<'ASC' | 'DESC'>('DESC');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -83,7 +89,7 @@ export default function ItemsPage() {
     try {
       const stored = localStorage.getItem(key)
       if (stored === 'grid' || stored === 'list') setViewMode(stored)
-    } catch {}
+    } catch { }
   }, [userId])
 
   // Salvar preferência ao alterar
@@ -91,17 +97,17 @@ export default function ItemsPage() {
     const key = `items:viewMode:${userId}`
     try {
       localStorage.setItem(key, viewMode)
-    } catch {}
+    } catch { }
   }, [viewMode, userId])
 
-  const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ["items", "group", page, debouncedSearch],
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    queryKey: ["items", "group", page, pageSize, debouncedSearch, orderDirection],
     queryFn: async () => {
       // Constrói os parâmetros da URL dinamicamente
       const response = await client.query(
         "/item",
         "get",
-        { query: { pageSize: String(PAGE_SIZE), page: String(page), groupBy: "groupUuid", search: debouncedSearch || undefined } }
+        { query: { pageSize: String(pageSize), page: String(page), groupBy: "groupUuid", search: debouncedSearch || undefined, orderDirection } }
       );
       if (!isSuccessResponse(response)) throw new Error(response.message);
 
@@ -118,19 +124,19 @@ export default function ItemsPage() {
       return response
     },
     onSuccess: (response) => {
-      const deletedCount = (response as { data?: { deletedItems?: number }}).data?.deletedItems ?? 1
-      const deletedFiles = (response as { data?: { deletedFiles?: number }}).data?.deletedFiles ?? 0
-      
+      const deletedCount = (response as { data?: { deletedItems?: number } }).data?.deletedItems ?? 1
+      const deletedFiles = (response as { data?: { deletedFiles?: number } }).data?.deletedFiles ?? 0
+
       let description = `${deletedCount} item(s) do grupo foram removidos com sucesso.`
       if (deletedFiles > 0) {
         description += ` ${deletedFiles} arquivo(s) também foram removidos.`
       }
-      
+
       toast({
         title: "Grupo deletado",
         description,
       })
-      
+
       // Invalidar e refetch da lista de itens
       queryClient.invalidateQueries({ queryKey: ["items", "group"] })
     },
@@ -151,19 +157,87 @@ export default function ItemsPage() {
 
   const totalPages = data?.metadata?.totalPages || 0
 
+  // Definição de colunas para a visualização em lista (tabela)
+  const columns: ColumnDef<Item & { group?: any }>[] = [
+    {
+      accessorKey: 'name',
+      header: 'Nome',
+      cell: ({ row }) => {
+        const item = row.original
+        const title = item.serial?.length ? item.serial : (item.assetCode?.length ? item.assetCode : item.name)
+        return (
+          <div className="font-medium">{title}</div>
+        )
+      }
+    },
+    {
+      id: 'groupUuid',
+      header: 'UUID do Grupo',
+      cell: ({ row }) => row.original.groupUuid ?? '—'
+    },
+    {
+      id: 'category',
+      header: 'Categoria',
+      cell: ({ row }) => row.original.category?.name ?? '—'
+    },
+    {
+      id: 'quantity',
+      header: 'Qtd',
+      cell: ({ row }) => (row.original as { quantity?: number }).quantity ?? 0
+    },
+    {
+      id: 'price',
+      header: 'Preço',
+      cell: ({ row }) => typeof row.original.price === 'number' ? formatCurrency(row.original.price) : '—'
+    },
+    {
+      id: 'actions',
+      header: 'Ações',
+      cell: ({ row }) => {
+        const item = row.original
+        return (
+          <div className="flex items-center gap-2 justify-end">
+            <Button onClick={() => handleEditGroup(item.groupUuid as string)} variant="outline" size="sm" className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300">
+              <Edit className="mr-2 h-4 w-4" />
+              Detalhes
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300" disabled={deleteGroupMutation.isPending}>
+                  {deleteGroupMutation.isPending && String(deleteGroupMutation.variables) === String(item.groupUuid) ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-2 h-4 w-4" />
+                  )}
+                  Deletar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Deletar grupo de itens?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Todos os itens do grupo "{item.name}" (groupUuid: {item.groupUuid}) serão removidos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleDeleteGroup(item)} className="bg-red-600 text-white hover:bg-red-700" disabled={deleteGroupMutation.isPending}>
+                    {deleteGroupMutation.isPending && String(deleteGroupMutation.variables) === String(item.groupUuid) && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Deletar Grupo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )
+      }
+    },
+  ]
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Itens</h1>
-          <p className="text-muted-foreground">Gerencie os itens do estoque</p>
-        </div>
-        <Button onClick={handleNewItem} className="bg-green-600 hover:bg-green-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Item
-        </Button>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Buscar Itens</CardTitle>
@@ -191,241 +265,106 @@ export default function ItemsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Lista de Itens</CardTitle>
-            <CardDescription>
-              {data?.metadata?.total || 0} grupo(s) de itens encontrados
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              title="Visualização em grade"
-              aria-label="Visualização em grade"
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              title="Visualização em lista"
-              aria-label="Visualização em lista"
-            >
-              <Rows className="h-4 w-4" />
-            </Button>
-            {/* O isFetching indica que uma busca em segundo plano está acontecendo */}
-            {isFetching && (
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-500">
-              Erro ao carregar itens: {(error as Error).message}
-            </div>
-          ) : data?.data?.length === 0 ? (
-            <div className="text-center py-8">
-              <Package2 className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-gray-500">Nenhum item encontrado</p>
-            </div>
-          ) : (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {data?.data?.map((item: Item & { group?: any }) => (
-                  <div key={item.id} className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-semibold">{item.name}</h3>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                        <span>UUID: {item.groupUuid}</span>
-                        {(item as { quantity?: number }).quantity && <span>• Qtd: {(item as { quantity?: number }).quantity}</span>}
-                        {item.category?.name && <span>• {item.category.name}</span>}
-                        {Array.isArray(item.tags) && item.tags.length > 0 && (
-                          <span className="flex items-center gap-1">
-                            •
-                            <span className="flex flex-wrap gap-1">
-                              {item.tags.slice(0, 3).map((t) => (
-                                <Badge key={t.id} variant="secondary" className="text-[10px] px-1 py-0">
-                                  {t.name}
-                                </Badge>
-                              ))}
-                              {item.tags.length > 3 && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0">+{item.tags.length - 3}</Badge>
-                              )}
-                            </span>
-                          </span>
+      {error ? (
+        <div className="text-center py-8 text-red-500">
+          Erro ao carregar itens: {(error as Error).message}
+        </div>
+      ) : (
+        <DataTable<Item & { group?: any }, unknown>
+          columns={columns}
+          data={(data?.data as (Item & { group?: any })[]) ?? []}
+          title="Lista de Itens"
+          description="Visualize e gerencie os itens do sistema"
+          isLoading={isLoading}
+          onRefresh={() => refetch()}
+          enableSearch={false}
+          serverPagination={{
+            pageIndex: page - 1,
+            pageSize,
+            total: data?.metadata?.total || 0,
+            totalPages: totalPages,
+            onPageChange: (pageIndex) => setPage(pageIndex + 1),
+            onPageSizeChange: (next) => {
+              setPageSize(next)
+              setPage(1)
+            },
+          }}
+          viewMode={viewMode}
+          onViewModeChange={(mode) => setViewMode(mode)}
+          sortDirection={orderDirection}
+          onSortDirectionToggle={() => setOrderDirection((d) => (d === 'DESC' ? 'ASC' : 'DESC'))}
+          renderGridItem={(item) => (
+            <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between">
+              <div>
+                <h3 className="font-semibold">
+                  {item.serial?.length ? item.serial : (item.assetCode?.length ? item.assetCode : item.name)}
+                  {item.serial?.length && item.assetCode?.length ? ` • ${item.assetCode}` : ''}
+                </h3>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <span>UUID: {item.groupUuid}</span>
+                  {(item as { quantity?: number }).quantity && <span>• Qtd: {(item as { quantity?: number }).quantity}</span>}
+                  {item.category?.name && <span>• {item.category.name}</span>}
+                  {Array.isArray(item.tags) && item.tags.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      •
+                      <span className="flex flex-wrap gap-1">
+                        {item.tags.slice(0, 3).map((t) => (
+                          <Badge key={t.id} variant="secondary" className="text-[10px] px-1 py-0">
+                            {t.name}
+                          </Badge>
+                        ))}
+                        {item.tags.length > 3 && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">+{item.tags.length - 3}</Badge>
                         )}
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      {typeof item.price === 'number' ? (
-                        <span className="text-xs text-muted-foreground">{formatCurrency(item.price)}</span>
-                      ) : <span />}
-                      <div className="flex items-center gap-2">
-                        <Button onClick={() => handleEditGroup(item.groupUuid as string)} variant="outline" size="sm" className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300">
-                          <Edit className="mr-2 h-4 w-4" />
-                          Detalhes
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300" disabled={deleteGroupMutation.isPending}>
-                              {deleteGroupMutation.isPending && String(deleteGroupMutation.variables) === String(item.groupUuid) ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="mr-2 h-4 w-4" />
-                              )}
-                              Deletar
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Deletar grupo de itens?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação não pode ser desfeita. Todos os itens do grupo "{item.name}" (groupUuid: {item.groupUuid}) serão removidos.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteGroup(item)} className="bg-red-600 text-white hover:bg-red-700" disabled={deleteGroupMutation.isPending}>
-                                {deleteGroupMutation.isPending && String(deleteGroupMutation.variables) === String(item.groupUuid) && (
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                )}
-                                Deletar Grupo
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                      </span>
+                    </span>
+                  )}
+                </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {data?.data?.map((item: Item & { group?: any }) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div>
-                      <h3 className="font-semibold">{item.name}</h3>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                        <span>UUID: {item.groupUuid}</span>
-                        {(item as { quantity?: number }).quantity && <span>• Quantidade: {(item as { quantity?: number }).quantity}</span>}
-                        {item.group.category?.name && <span>• Categoria: {item.group.category.name}</span>}
-                        {Array.isArray(item.tags) && item.tags.length > 0 && (
-                          <span className="flex items-center gap-1">
-                            • Tags:
-                            <span className="flex flex-wrap gap-1">
-                              {item.tags.slice(0, 4).map((t) => (
-                                <Badge key={t.id} variant="secondary" className="text-[10px] px-1 py-0">
-                                  {t.name}
-                                </Badge>
-                              ))}
-                              {item.tags.length > 4 && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0">+{item.tags.length - 4}</Badge>
-                              )}
-                            </span>
-                          </span>
+              <div className="mt-3 flex items-center justify-between">
+                {typeof item.price === 'number' ? (
+                  <span className="text-xs text-muted-foreground">{formatCurrency(item.price)}</span>
+                ) : <span />}
+                <div className="flex items-center gap-2">
+                  <Button onClick={() => handleEditGroup(item.groupUuid as string)} variant="outline" size="sm" className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Detalhes
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300" disabled={deleteGroupMutation.isPending}>
+                        {deleteGroupMutation.isPending && String(deleteGroupMutation.variables) === String(item.groupUuid) ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-2 h-4 w-4" />
                         )}
-                        {typeof item.price === 'number' && (
-                          <span>• Valor estimado/unit: R$ {item.price.toFixed(2)}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                                                  onClick={() => handleEditGroup(item.groupUuid as string)} 
-                        variant="outline" 
-                        size="sm"
-                        className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Detalhes
+                        Deletar
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
-                            disabled={deleteGroupMutation.isPending}
-                          >
-                            {deleteGroupMutation.isPending && String(deleteGroupMutation.variables) === String(item.groupUuid) ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="mr-2 h-4 w-4" />
-                            )}
-                            Deletar
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Deletar grupo de itens?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. Todos os itens do grupo "{item.name}" 
-                              (groupUuid: {item.groupUuid}) serão permanentemente removidos do sistema, 
-                              incluindo todos os arquivos associados (fotos e documentos).
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDeleteGroup(item)}
-                              className="bg-red-600 text-white hover:bg-red-700"
-                              disabled={deleteGroupMutation.isPending}
-                            >
-                              {deleteGroupMutation.isPending && String(deleteGroupMutation.variables) === String(item.groupUuid) && (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              )}
-                              Deletar Grupo
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-        </CardContent>
-        {/* 5. Controles de paginação no rodapé do Card */}
-        {totalPages > 0 && (
-          <CardFooter>
-            <div className="flex w-full items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                Página {page} de {totalPages}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((old) => Math.max(old - 1, 1))}
-                  disabled={page === 1}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((old) => old + 1)}
-                  disabled={page >= totalPages}
-                >
-                  Próximo
-                </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Deletar grupo de itens?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. Todos os itens do grupo "{item.name}" (groupUuid: {item.groupUuid}) serão removidos.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteGroup(item)} className="bg-red-600 text-white hover:bg-red-700" disabled={deleteGroupMutation.isPending}>
+                          {deleteGroupMutation.isPending && String(deleteGroupMutation.variables) === String(item.groupUuid) && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Deletar Grupo
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             </div>
-          </CardFooter>
-        )}
-      </Card>
+          )}
+        />
+      )}
     </div>
   );
 }

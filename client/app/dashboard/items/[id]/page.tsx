@@ -238,7 +238,10 @@ export default function ItemDetailsPage() {
             Voltar
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{item.name}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {item.serial?.length ? item.serial : (item.assetCode?.length ? item.assetCode : item.name)}
+              {item.serial?.length && item.assetCode?.length ? ` • ${item.assetCode}` : ''}
+            </h1>
             <p className="text-muted-foreground">Detalhes do item</p>
           </div>
         </div>
@@ -461,7 +464,7 @@ export default function ItemDetailsPage() {
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Criado em</Label>
               <p className="text-sm">
-                {formatSafeDate(item.createAt, "dd/MM/yyyy 'às' HH:mm")}
+                {formatSafeDate(item.createdAt, "dd/MM/yyyy 'às' HH:mm")}
               </p>
             </div>
             <div>
