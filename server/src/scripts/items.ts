@@ -1,10 +1,9 @@
+import { Group } from '@/database/entity/Group'
 import { Item } from '@/database/entity/Item'
 import { ItemCategory } from '@/database/entity/ItemCategory'
 import { ItemTag } from '@/database/entity/ItemTag'
-import { Group } from '@/database/entity/Group'
 import { ItemStatus, ItemType } from '@/database/enums'
 import { fakerPT_BR as faker } from '@faker-js/faker'
-import { nanoid } from 'nanoid' // Importar nanoid
 
 const NUM_ITEM_GROUPS = 15
 const MIN_QTY_PER_GROUP = 3
@@ -110,7 +109,6 @@ export async function fixItemsStatusByProjectAssociation() {
   let fixed = 0
   for (const item of items) {
     const hasProject = !!item.project
-    const shouldBe = hasProject ? ItemStatus.InUse : null
     const isWrong = hasProject && item.status !== ItemStatus.InUse
 
     if (isWrong) {
