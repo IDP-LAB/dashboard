@@ -13,13 +13,19 @@ import type {
   MethodOptions as OriginalMethodOptions
 } from '@asterflow/router'
 
+export type ListResponse = {
+  total: number
+  currentPage: number
+  totalPages: number
+  pageSize: number
+}
 
 export declare module '@asterflow/response' {
-  interface Responders {
+  interface Responders<TData> {
     200: {
       message: string
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: any
+      data: TData
+      metadata: TData extends unknown[] ? ListResponse : unknown
     }
   }
   // interface AsterResponse {}
