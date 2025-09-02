@@ -5,7 +5,7 @@ import { ItemCategory } from '@/database/entity/ItemCategory'
 import { ItemTag } from '@/database/entity/ItemTag'
 import { File, FileType } from '@/database/entity/File'
 import { Group } from '@/database/entity/Group'
-import { ItemStatus, ItemType } from '@/database/enums'
+import { ItemStatus, ItemType, Role } from '@/database/enums'
 import { storage } from '@/index'
 import { z } from 'zod'
 import { nanoid } from 'nanoid'
@@ -41,7 +41,7 @@ export default new Router({
   name: 'CreateItem',
   path: '/item',
   description: 'Cria um ou mais itens e os agrupa em um Group (UUID). Se um grupo similar já existir, os novos itens serão adicionados a ele.',
-  authenticate: true,
+  authenticate: [Role.Administrator],
   // Removido schema para permitir multipart/form-data
   methods: {
     async post({ reply, request }) {

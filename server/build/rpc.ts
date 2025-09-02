@@ -30,7 +30,6 @@ import type InviteById from '../routers/invite/$id/index.js'
 import type InviteClaim from '../routers/invite/$code.js'
 import type Invites from '../routers/invite/index.js'
 import type ListItems from '../routers/item/index.js'
-import type ListLogs from '../routers/logs/index.js'
 import type ListProjects from '../routers/project/index.js'
 import type ListUsers from '../routers/users/index.js'
 import type ReturnItemByGroup from '../routers/item/return.js'
@@ -269,14 +268,6 @@ export type Routers = {
       response: MergeUnion<UnwrapPromise<ReturnType<typeof FindandTransferItem.methods.post>>>,
       request: z.infer<NonNullable<typeof FindandTransferItem.schema>['post']>,
       auth: FirstParameter<typeof FindandTransferItem>,
-      query: undefined
-    }
-  },
-  '/logs': {
-    get: {
-      response: MergeUnion<UnwrapPromise<ReturnType<typeof ListLogs.methods.get>>>,
-      request: undefined,
-      auth: FirstParameter<typeof ListLogs>,
       query: undefined
     }
   },

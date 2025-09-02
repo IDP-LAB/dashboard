@@ -31,6 +31,7 @@ import {
   Box,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -48,12 +49,12 @@ import React from "react"
  */
 const mainNavItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Projetos", href: "/dashboard/projects", icon: ClipboardList },
   { title: "Itens", href: "/dashboard/items", icon: Box },
   { title: "Usuários", href: "/dashboard/users", icon: Users },
   { title: "Convites", href: "/dashboard/invites", icon: UserPlus },
   // { title: "Estoque", href: "/dashboard/stock", icon: Warehouse },
   //{ title: "Manutenção", href: "/dashboard/maintenance", icon: Wrench },
-  //{ title: "Projetos", href: "/dashboard/projects", icon: ClipboardList },
   //{ title: "Relatórios", href: "/dashboard/reports", icon: BarChart3 },
 ]
 
