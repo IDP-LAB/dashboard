@@ -27,7 +27,7 @@ export class Group extends BaseEntity {
   @UpdateDateColumn()
     updateAt!: Date
   @CreateDateColumn()
-    createAt!: Date
+    createdAt!: Date
 }
 
 

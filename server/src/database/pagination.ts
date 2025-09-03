@@ -90,7 +90,8 @@ export async function paginate<T extends ObjectLiteral>({
   // Configurar ordenação
   const finalOrder = {
     ...(order || {}),
-    ...(orderBy ? { [orderBy]: orderDirection } : {})
+    // Se nada vier, ordena por createdAt usando a direção solicitada
+    ...((orderBy ? { [orderBy]: orderDirection } : { createdAt: orderDirection }) as FindOptionsOrder<T>)
   } as FindOptionsOrder<T>
 
   const [data, total] = await repository.findAndCount({

@@ -62,8 +62,10 @@ interface GroupItem {
   status: ItemStatus
   price?: number
   groupUuid: string
-  createAt: string
+  createdAt: string
   updateAt: string
+  assetCode?: string | null
+  serial?: string | null
   category?: {
     id: number
     name: string
@@ -668,13 +670,16 @@ export default function EditGroupPage() {
                 <div className="flex-1">
                   <div className="flex items-center space-x-4">
                     <div>
-                      <h3 className="font-semibold">Item #{item.id}</h3>
+                      <h3 className="font-semibold">
+                        {item.serial?.length ? item.serial : (item.assetCode?.length ? item.assetCode : `Item #${item.id}`)}
+                        {item.serial?.length && item.assetCode?.length ? ` • ${item.assetCode}` : ''}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
                         {item.location && `Local: ${item.location}`}
                         {item.files && item.files.length > 0 && ` • ${item.files.length} arquivo(s)`}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Criado em: {formatSafeDate(item.createAt)}
+                        Criado em: {formatSafeDate(item.createdAt)}
                       </p>
                     </div>
                     <Badge variant={getStatusBadgeVariant(item.status)}>

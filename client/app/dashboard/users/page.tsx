@@ -15,7 +15,7 @@ import { isSuccessResponse } from "@/lib/response"
 import { ColumnDef } from "@tanstack/react-table"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Edit, Eye, MoreHorizontal, Plus, Shield, Trash2, User, UserPlus } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+// import removed: local role filter now handled by DataTable filterOptions
 import { useMemo, useState } from "react"
 import { Role, type User as ServerUser } from "server"
 
@@ -64,13 +64,19 @@ export default function UsersPage() {
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
 
-  const [roleFilter, setRoleFilter] = useState<"all" | "administrator" | "teacher" | "student">("all")
+  // Removido filtro local de função; o filtro é feito via DataTable (client-side)
+
+  const [serverFilters, setServerFilters] = useState<Record<string, string>>({})
 
   const { data, isFetching, refetch } = useQuery({
-    queryKey: ["users", pageIndex, pageSize, roleFilter],
+    queryKey: ["users", pageIndex, pageSize, serverFilters.userType],
     queryFn: async () => {
       const query: Record<string, string | number> = { page: pageIndex + 1, pageSize }
-      if (roleFilter !== "all") query.role = roleFilter
+      if (serverFilters.userType && serverFilters.userType !== "") {
+        // Backend espera role nos termos originais
+        const roleMap: Record<string, string> = { admin: 'administrator', teacher: 'teacher', student: 'student' }
+        query.role = roleMap[serverFilters.userType] ?? serverFilters.userType
+      }
       const response = await client.query(`/users`, "get", { query })
       if (!isSuccessResponse(response)) throw new Error(response.message)
       return response
@@ -360,20 +366,7 @@ export default function UsersPage() {
         </Card>
       </div>
 
-      {/* Filtro por role + Tabela de usuários */}
-      <div className="flex items-center justify-end mb-2">
-        <Select value={roleFilter} onValueChange={(v: any) => { setRoleFilter(v); setPageIndex(0) }}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Filtrar por função" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as funções</SelectItem>
-            <SelectItem value="administrator">Administrador</SelectItem>
-            <SelectItem value="teacher">Professor</SelectItem>
-            <SelectItem value="student">Aluno</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Tabela de usuários */}
 
       <DataTable
         columns={columns}
@@ -393,6 +386,7 @@ export default function UsersPage() {
           onPageChange: setPageIndex,
           onPageSizeChange: (size) => { setPageSize(size); setPageIndex(0) }
         }}
+        onServerFilterChange={(filters) => setServerFilters(filters)}
       />
 
       {/* Modais */}
