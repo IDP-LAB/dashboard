@@ -31,6 +31,40 @@ import { useFilters } from "@/lib/store"
 
 /**
  * Interface para configuração da tabela de dados
+ * 
+ * @example
+ * ```tsx
+ * <DataTable
+ *   columns={columns}
+ *   data={data}
+ *   title="Minha Tabela"
+ *   // Ações customizadas (incluindo filtros)
+ *   actions={
+ *     <div className="flex gap-2">
+ *       <Select value={filter} onValueChange={setFilter}>
+ *         <SelectTrigger className="w-[180px]">
+ *           <SelectValue placeholder="Filtrar por..." />
+ *         </SelectTrigger>
+ *         <SelectContent>
+ *           <SelectItem value="">Todos</SelectItem>
+ *           <SelectItem value="option1">Opção 1</SelectItem>
+ *         </SelectContent>
+ *       </Select>
+ *       <Button>Nova Ação</Button>
+ *     </div>
+ *   }
+ *   actionsPosition="start" // 'start' | 'center' | 'end'
+ *   // Configuração de botões nativos
+ *   nativeActions={{
+ *     refresh: true,      // Botão de atualizar
+ *     export: true,       // Botão de exportar
+ *     columns: true,      // Seletor de colunas
+ *     viewMode: true,     // Alternância grade/lista
+ *     sortDirection: true // Alternância de ordenação
+ *   }}
+ *   nativeActionsPosition="end" // 'start' | 'center' | 'end'
+ * />
+ * ```
  */
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -38,13 +72,7 @@ interface DataTableProps<TData, TValue> {
   searchKey?: string
   searchPlaceholder?: string
   enableSearch?: boolean
-  filterOptions?: {
-    key: string
-    label: string
-    options: { label: string; value: string }[]
-  }[]
-  // Callback opcional para integração com filtros no servidor
-  onServerFilterChange?: (filters: Record<string, string>) => void
+
   onExport?: () => void
   onRefresh?: () => void
   isLoading?: boolean
@@ -67,6 +95,18 @@ interface DataTableProps<TData, TValue> {
   renderGridItem?: (row: TData) => React.ReactNode
   gridColsClassName?: string
   showColumnsSelector?: boolean
+  // Ações customizadas
+  actions?: React.ReactNode
+  actionsPosition?: 'start' | 'center' | 'end'
+  // Configuração de botões nativos
+  nativeActions?: {
+    refresh?: boolean
+    export?: boolean
+    columns?: boolean
+    viewMode?: boolean
+    sortDirection?: boolean
+  }
+  nativeActionsPosition?: 'start' | 'center' | 'end'
 }
 
 /**
@@ -78,7 +118,6 @@ export function DataTable<TData, TValue>({
   data,
   searchKey = "name",
   searchPlaceholder = "Buscar...",
-  filterOptions = [],
   onExport,
   onRefresh,
   isLoading = false,
@@ -93,7 +132,17 @@ export function DataTable<TData, TValue>({
   gridColsClassName = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
   enableSearch = true,
   showColumnsSelector = true,
-  onServerFilterChange,
+
+  actions,
+  actionsPosition = 'end',
+  nativeActions = {
+    refresh: true,
+    export: true,
+    columns: true,
+    viewMode: true,
+    sortDirection: true
+  },
+  nativeActionsPosition = 'end',
 }: DataTableProps<TData, TValue>) {
   // Estados locais da tabela
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -185,7 +234,7 @@ export function DataTable<TData, TValue>({
           <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
             {/* Busca global */}
             {enableSearch && (
-              <div className="relative flex-1 max-w-sm">
+              <div className="relative flex-1 min-w-[280px] sm:min-w-[320px] md:min-w-[400px] max-w-lg">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={searchPlaceholder}
@@ -196,113 +245,290 @@ export function DataTable<TData, TValue>({
               </div>
             )}
 
-            {/* Ações */}
-            <div className="flex gap-2">
-              {/* Botão de atualizar */}
-              {onRefresh && (
-                <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                  Atualizar
-                </Button>
+            {/* Ações com posicionamento flexível */}
+            <div className="flex gap-2 justify-between w-full">
+              {/* Ações customizadas - Posição START */}
+              {actions && actionsPosition === 'start' && (
+                <div className="flex gap-2">
+                  {actions}
+                </div>
               )}
 
-              {/* Botão de exportar */}
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-
-              {/* Seletor de colunas */}
-              {showColumnsSelector && viewMode !== 'grid' && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Colunas
-                      <ChevronDown className="h-4 w-4 ml-2" />
+              {/* Ações nativas - Posição START */}
+              {nativeActionsPosition === 'start' && (
+                <div className="flex gap-2">
+                  {/* Botão de atualizar */}
+                  {onRefresh && nativeActions.refresh && (
+                    <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                      Atualizar
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[200px]">
-                    {table
-                      .getAllColumns()
-                      .filter((column) => column.getCanHide())
-                      .map((column) => {
-                        return (
-                          <DropdownMenuCheckboxItem
-                            key={column.id}
-                            className="capitalize"
-                            checked={column.getIsVisible()}
-                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                          >
-                            {column.id}
-                          </DropdownMenuCheckboxItem>
-                        )
-                      })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              {/* Seletor Grade/Lista, se habilitado */}
-              {onViewModeChange && (
-                <Select value={viewMode} onValueChange={(v) => onViewModeChange(v as 'grid' | 'list')}>
-                  <SelectTrigger className="h-8 w-[140px]">
-                    <SelectValue placeholder="Visualização" />
-                  </SelectTrigger>
-                  <SelectContent align="end">
-                    <SelectItem value="grid">
-                      <div className="flex items-center gap-2">
-                        <LayoutGrid className="h-4 w-4" />
-                        Grade
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="list">
-                      <div className="flex items-center gap-2">
-                        <Rows className="h-4 w-4" />
-                        Lista
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-
-              {/* Alternância de ordenação */}
-              {onSortDirectionToggle && (
-                <Button variant="outline" size="sm" onClick={onSortDirectionToggle} aria-label="Alternar ordenação">
-                  {sortDirection === 'DESC' ? (
-                    <ArrowDownWideNarrow className="h-4 w-4 mr-2" />
-                  ) : (
-                    <ArrowUpWideNarrow className="h-4 w-4 mr-2" />
                   )}
-                  {sortDirection === 'DESC' ? 'Ordenar: Mais novo → mais antigo' : 'Ordenar: Mais antigo → mais novo'}
-                </Button>
+
+                  {/* Botão de exportar */}
+                  {nativeActions.export && (
+                    <Button variant="outline" size="sm" onClick={handleExport}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Exportar
+                    </Button>
+                  )}
+
+                  {/* Seletor de colunas */}
+                  {showColumnsSelector && viewMode !== 'grid' && nativeActions.columns && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Filter className="h-4 w-4 mr-2" />
+                          Colunas
+                          <ChevronDown className="h-4 w-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[200px]">
+                        {table
+                          .getAllColumns()
+                          .filter((column) => column.getCanHide())
+                          .map((column) => {
+                            return (
+                              <DropdownMenuCheckboxItem
+                                key={column.id}
+                                className="capitalize"
+                                checked={column.getIsVisible()}
+                                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                              >
+                                {column.id}
+                              </DropdownMenuCheckboxItem>
+                            )
+                          })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+
+                  {/* Seletor Grade/Lista */}
+                  {onViewModeChange && nativeActions.viewMode && (
+                    <Select value={viewMode} onValueChange={(v) => onViewModeChange(v as 'grid' | 'list')}>
+                      <SelectTrigger className="h-8 w-[140px]">
+                        <SelectValue placeholder="Visualização" />
+                      </SelectTrigger>
+                      <SelectContent align="end">
+                        <SelectItem value="grid">
+                          <div className="flex items-center gap-2">
+                            <LayoutGrid className="h-4 w-4" />
+                            Grade
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="list">
+                          <div className="flex items-center gap-2">
+                            <Rows className="h-4 w-4" />
+                            Lista
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Alternância de ordenação */}
+                  {onSortDirectionToggle && nativeActions.sortDirection && (
+                    <Button variant="outline" size="sm" onClick={onSortDirectionToggle} aria-label="Alternar ordenação">
+                      {sortDirection === 'DESC' ? (
+                        <ArrowDownWideNarrow className="h-4 w-4 mr-2" />
+                      ) : (
+                        <ArrowUpWideNarrow className="h-4 w-4 mr-2" />
+                      )}
+                      {sortDirection === 'DESC' ? 'Ordenar: Mais novo → mais antigo' : 'Ordenar: Mais antigo → mais novo'}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Ações customizadas - Posição CENTER */}
+              {actions && actionsPosition === 'center' && (
+                <div className="flex gap-2">
+                  {actions}
+                </div>
+              )}
+
+              {/* Ações nativas - Posição CENTER */}
+              {nativeActionsPosition === 'center' && (
+                <div className="flex gap-2">
+                  {/* Botão de atualizar */}
+                  {onRefresh && nativeActions.refresh && (
+                    <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                      Atualizar
+                    </Button>
+                  )}
+
+                  {/* Botão de exportar */}
+                  {nativeActions.export && (
+                    <Button variant="outline" size="sm" onClick={handleExport}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Exportar
+                    </Button>
+                  )}
+
+                  {/* Seletor de colunas */}
+                  {showColumnsSelector && viewMode !== 'grid' && nativeActions.columns && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Filter className="h-4 w-4 mr-2" />
+                          Colunas
+                          <ChevronDown className="h-4 w-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[200px]">
+                        {table
+                          .getAllColumns()
+                          .filter((column) => column.getCanHide())
+                          .map((column) => {
+                            return (
+                              <DropdownMenuCheckboxItem
+                                key={column.id}
+                                className="capitalize"
+                                checked={column.getIsVisible()}
+                                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                              >
+                                {column.id}
+                              </DropdownMenuCheckboxItem>
+                            )
+                          })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+
+                  {/* Seletor Grade/Lista */}
+                  {onViewModeChange && nativeActions.viewMode && (
+                    <Select value={viewMode} onValueChange={(v) => onViewModeChange(v as 'grid' | 'list')}>
+                      <SelectTrigger className="h-8 w-[140px]">
+                        <SelectValue placeholder="Visualização" />
+                      </SelectTrigger>
+                      <SelectContent align="end">
+                        <SelectItem value="grid">
+                          <div className="flex items-center gap-2">
+                            <LayoutGrid className="h-4 w-4" />
+                            Grade
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="list">
+                          <div className="flex items-center gap-2">
+                            <Rows className="h-4 w-4" />
+                            Lista
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Alternância de ordenação */}
+                  {onSortDirectionToggle && nativeActions.sortDirection && (
+                    <Button variant="outline" size="sm" onClick={onSortDirectionToggle} aria-label="Alternar ordenação">
+                      {sortDirection === 'DESC' ? (
+                        <ArrowDownWideNarrow className="h-4 w-4 mr-2" />
+                      ) : (
+                        <ArrowUpWideNarrow className="h-4 w-4 mr-2" />
+                      )}
+                      {sortDirection === 'DESC' ? 'Ordenar: Mais novo → mais antigo' : 'Ordenar: Mais antigo → mais novo'}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Ações customizadas - Posição END */}
+              {actions && actionsPosition === 'end' && (
+                <div className="flex gap-2">
+                  {actions}
+                </div>
+              )}
+
+              {/* Ações nativas - Posição END */}
+              {nativeActionsPosition === 'end' && (
+                <div className="flex gap-2">
+                  {/* Botão de atualizar */}
+                  {onRefresh && nativeActions.refresh && (
+                    <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                      Atualizar
+                    </Button>
+                  )}
+
+                  {/* Botão de exportar */}
+                  {nativeActions.export && (
+                    <Button variant="outline" size="sm" onClick={handleExport}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Exportar
+                    </Button>
+                  )}
+
+                  {/* Seletor de colunas */}
+                  {showColumnsSelector && viewMode !== 'grid' && nativeActions.columns && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Filter className="h-4 w-4 mr-2" />
+                          Colunas
+                          <ChevronDown className="h-4 w-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[200px]">
+                        {table
+                          .getAllColumns()
+                          .filter((column) => column.getCanHide())
+                          .map((column) => {
+                            return (
+                              <DropdownMenuCheckboxItem
+                                key={column.id}
+                                className="capitalize"
+                                checked={column.getIsVisible()}
+                                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                              >
+                                {column.id}
+                              </DropdownMenuCheckboxItem>
+                            )
+                          })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+
+                  {/* Seletor Grade/Lista */}
+                  {onViewModeChange && nativeActions.viewMode && (
+                    <Select value={viewMode} onValueChange={(v) => onViewModeChange(v as 'grid' | 'list')}>
+                      <SelectTrigger className="h-8 w-[140px]">
+                        <SelectValue placeholder="Visualização" />
+                      </SelectTrigger>
+                      <SelectContent align="end">
+                        <SelectItem value="grid">
+                          <div className="flex items-center gap-2">
+                            <LayoutGrid className="h-4 w-4" />
+                            Grade
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="list">
+                          <div className="flex items-center gap-2">
+                            <Rows className="h-4 w-4" />
+                            Lista
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Alternância de ordenação */}
+                  {onSortDirectionToggle && nativeActions.sortDirection && (
+                    <Button variant="outline" size="sm" onClick={onSortDirectionToggle} aria-label="Alternar ordenação">
+                      {sortDirection === 'DESC' ? (
+                        <ArrowDownWideNarrow className="h-4 w-4 mr-2" />
+                      ) : (
+                        <ArrowUpWideNarrow className="h-4 w-4 mr-2" />
+                      )}
+                      {sortDirection === 'DESC' ? 'Ordenar: Mais novo → mais antigo' : 'Ordenar: Mais antigo → mais novo'}
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
 
-          {/* Linha inferior - Filtros específicos */}
-          {filterOptions.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {filterOptions.map((filter) => (
-                <Select
-                  key={filter.key}
-                  value={(table.getColumn(filter.key)?.getFilterValue() as string) || ""}
-                  onValueChange={(value) => table.getColumn(filter.key)?.setFilterValue(value === "all" ? "" : value)}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={filter.label} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {filter.options.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ))}
-            </div>
-          )}
+
         </div>
 
         {/* === LISTAGEM === */}
@@ -486,7 +712,7 @@ export function DataTable<TData, TValue>({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4 pt-4 border-t text-xs text-muted-foreground">
           <div>
             {serverPagination
-              ? <>Mostrando página {serverPagination.pageIndex + 1} de {serverPagination.totalPages} • Total: {serverPagination.total} registros{globalFilter && ` para "${globalFilter}"`}</>
+              ? <>Mostrando página {serverPagination.pageIndex + 1} de {serverPagination.totalPages}</>
               : <>Mostrando {table.getRowModel().rows.length} de {table.getFilteredRowModel().rows.length} resultados{globalFilter && ` para "${globalFilter}"`}</>}
           </div>
           <div className="flex items-center gap-4">

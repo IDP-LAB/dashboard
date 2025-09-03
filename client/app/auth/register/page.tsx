@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAPI } from "@/hooks/useAPI"
@@ -23,7 +23,7 @@ type InviteInfo = {
   expiresAt: string | null
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { client } = useAPI()
   const search = useSearchParams()
   const router = useRouter()
@@ -294,4 +294,30 @@ export default function RegisterPage() {
   )
 }
 
+function RegisterLoading() {
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <Card className="backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <CardHeader>
+          <CardTitle>Criar conta</CardTitle>
+          <CardDescription>
+            Use seu convite para concluir o cadastro e começar a usar a plataforma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<RegisterLoading />}>
+      <RegisterForm />
+    </Suspense>
+  )
+}

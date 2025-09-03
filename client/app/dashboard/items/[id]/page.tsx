@@ -276,6 +276,7 @@ export default function ItemDetailsPage() {
                     hideCategory
                     hideDescription
                     hideConsumableDetails
+                    hideIdentificationCodes
                     onSuccess={() => {
                       setIsEditGroupDialogOpen(false)
                       queryClient.invalidateQueries({ queryKey: ["item", itemId] })
@@ -392,6 +393,18 @@ export default function ItemDetailsPage() {
               <Label className="text-sm font-medium text-muted-foreground">Group UUID</Label>
               <p className="text-sm break-all">{item.group?.id}</p>
             </div>
+            {item.serial && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Número de Série</Label>
+                <p className="text-sm">{item.serial}</p>
+              </div>
+            )}
+            {item.assetCode && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Número de Patrimônio</Label>
+                <p className="text-sm">{item.assetCode}</p>
+              </div>
+            )}
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Nome</Label>
               <p className="text-sm">{item.name}</p>

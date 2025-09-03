@@ -264,7 +264,6 @@ export default function ItemsPage() {
           </div>
         </CardContent>
       </Card>
-
       {error ? (
         <div className="text-center py-8 text-red-500">
           Erro ao carregar itens: {(error as Error).message}
@@ -278,6 +277,21 @@ export default function ItemsPage() {
           isLoading={isLoading}
           onRefresh={() => refetch()}
           enableSearch={false}
+          actions={
+            <Button onClick={handleNewItem}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Item
+            </Button>
+          }
+          actionsPosition="end"
+          nativeActions={{
+            refresh: true,
+            export: true,
+            columns: false,
+            viewMode: true,
+            sortDirection: true
+          }}
+          nativeActionsPosition="start"
           serverPagination={{
             pageIndex: page - 1,
             pageSize,
@@ -297,7 +311,7 @@ export default function ItemsPage() {
             <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between">
               <div>
                 <h3 className="font-semibold">
-                  {item.serial?.length ? item.serial : (item.assetCode?.length ? item.assetCode : item.name)}
+                  {item.name}
                   {item.serial?.length && item.assetCode?.length ? ` • ${item.assetCode}` : ''}
                 </h3>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">

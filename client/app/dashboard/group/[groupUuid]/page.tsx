@@ -788,6 +788,7 @@ export default function EditGroupPage() {
               hideConsumableDetails={editMode === 'item'}
               hideAcquisitionDate={editMode === 'group'}
               hideStatus={editMode === 'group'}
+              hideIdentificationCodes={editMode === 'group'}
               onSuccess={() => {
                 setIsEditDialogOpen(false)
                 setEditingItem(null)

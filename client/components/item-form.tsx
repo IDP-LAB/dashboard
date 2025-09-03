@@ -88,7 +88,8 @@ export function ItemForm({
   disableType = false,
   hideAcquisitionDate = false,
   hideStatus = false,
-  hideHeader = false
+  hideHeader = false,
+  hideIdentificationCodes = false
 }: {
   item?: ItemProperties & { category?: { id: number; name: string }; group?: { id: string } }
   isGroupEdit?: boolean
@@ -108,6 +109,7 @@ export function ItemForm({
   hideAcquisitionDate?: boolean
   hideStatus?: boolean
   hideHeader?: boolean
+  hideIdentificationCodes?: boolean
 }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -503,14 +505,14 @@ export function ItemForm({
             )}
 
             {/* Códigos de identificação (mostrar apenas em edição ou quando quantidade = 1) */}
-            {(item || Number(quantityValue) <= 1) && (
+            {!hideIdentificationCodes && (item || Number(quantityValue) <= 1) && (
               <div className="grid md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="serial"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Código de Série (serial)</FormLabel>
+                      <FormLabel>Número de Série</FormLabel>
                       <FormControl>
                         <Input placeholder="Opcional" {...field} disabled={disableSharedFields} />
                       </FormControl>
@@ -523,7 +525,7 @@ export function ItemForm({
                   name="assetCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Código de Patrimônio (assetCode)</FormLabel>
+                      <FormLabel>Número de Patrimônio</FormLabel>
                       <FormControl>
                         <Input placeholder="Opcional" {...field} disabled={disableSharedFields} />
                       </FormControl>
@@ -535,7 +537,7 @@ export function ItemForm({
             )}
 
             {/* Inputs adicionais quando batch (quantity > 1) */}
-            {(!item && !hideQuantity && Number(quantityValue) > 1) && (
+            {!hideIdentificationCodes && (!item && !hideQuantity && Number(quantityValue) > 1) && (
               <div className="space-y-2 border rounded-md p-4">
                 <h4 className="font-medium">Códigos por item (opcional)</h4>
                 <p className="text-sm text-muted-foreground">Preencha, se desejar, os códigos por unidade. Deixe em branco para não definir.</p>

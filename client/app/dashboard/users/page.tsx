@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from "@/components/ui/data-table"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CreateUserModal } from "@/components/users/create-user-modal"
 import { EditUserModal } from "@/components/users/edit-user-modal"
 import { InviteUserModal } from "@/components/users/invite-user-modal"
@@ -14,12 +15,10 @@ import { useAPI } from "@/hooks/useAPI"
 import { isSuccessResponse } from "@/lib/response"
 import { ColumnDef } from "@tanstack/react-table"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Edit, Eye, MoreHorizontal, Plus, Shield, Trash2, User, UserPlus } from "lucide-react"
-// import removed: local role filter now handled by DataTable filterOptions
+import { Edit, Eye, Mail, MoreHorizontal, Plus, Shield, Trash2, User, UserPlus } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Role, type User as ServerUser } from "server"
 
-// Tipos para UI (mapeados do servidor)
 interface UIUser {
   id: number
   name: string
@@ -66,16 +65,16 @@ export default function UsersPage() {
 
   // Removido filtro local de função; o filtro é feito via DataTable (client-side)
 
-  const [serverFilters, setServerFilters] = useState<Record<string, string>>({})
+  const [userTypeFilter, setUserTypeFilter] = useState<string>("")
 
   const { data, isFetching, refetch } = useQuery({
-    queryKey: ["users", pageIndex, pageSize, serverFilters.userType],
+    queryKey: ["users", pageIndex, pageSize, userTypeFilter],
     queryFn: async () => {
       const query: Record<string, string | number> = { page: pageIndex + 1, pageSize }
-      if (serverFilters.userType && serverFilters.userType !== "") {
+      if (userTypeFilter && userTypeFilter !== "") {
         // Backend espera role nos termos originais
         const roleMap: Record<string, string> = { admin: 'administrator', teacher: 'teacher', student: 'student' }
-        query.role = roleMap[serverFilters.userType] ?? serverFilters.userType
+        query.role = roleMap[userTypeFilter] ?? userTypeFilter
       }
       const response = await client.query(`/users`, "get", { query })
       if (!isSuccessResponse(response)) throw new Error(response.message)
@@ -300,18 +299,7 @@ export default function UsersPage() {
     },
   ]
 
-  // Opções de filtro para a tabela (removido filtro de status)
-  const filterOptions = [
-    {
-      key: "userType",
-      label: "Tipo de usuário",
-      options: [
-        { label: "Aluno", value: "student" },
-        { label: "Professor", value: "teacher" },
-        { label: "Administrador", value: "admin" },
-      ],
-    },
-  ]
+
 
   return (
     <div className="space-y-6">
@@ -322,16 +310,6 @@ export default function UsersPage() {
           <p className="text-muted-foreground">
             Gerencie usuários, convites e permissões do sistema
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={openInviteModal} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Convidar
-          </Button>
-          <Button onClick={openCreateModal} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Criar Usuário
-          </Button>
         </div>
       </div>
 
@@ -373,11 +351,42 @@ export default function UsersPage() {
         data={users}
         searchKey="name"
         searchPlaceholder="Buscar usuários..."
-        filterOptions={filterOptions}
         title="Lista de Usuários"
         description="Visualize e gerencie todos os usuários do sistema"
         isLoading={isFetching}
         onRefresh={refetch}
+        actions={
+          <div className="flex gap-2">
+            <Select value={userTypeFilter || "all"} onValueChange={(value) => setUserTypeFilter(value === "all" ? "" : value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Tipo de usuário" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="student">Aluno</SelectItem>
+                <SelectItem value="teacher">Professor</SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => setIsInviteModalOpen(true)} variant="outline">
+              <Mail className="mr-2 h-4 w-4" />
+              Convidar
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Usuário
+            </Button>
+          </div>
+        }
+        actionsPosition="end"
+        nativeActions={{
+          refresh: true,
+          export: true,
+          columns: true,
+          viewMode: false,
+          sortDirection: false
+        }}
+        nativeActionsPosition="start"
         serverPagination={{
           pageIndex,
           pageSize,
@@ -386,7 +395,7 @@ export default function UsersPage() {
           onPageChange: setPageIndex,
           onPageSizeChange: (size) => { setPageSize(size); setPageIndex(0) }
         }}
-        onServerFilterChange={(filters) => setServerFilters(filters)}
+
       />
 
       {/* Modais */}
