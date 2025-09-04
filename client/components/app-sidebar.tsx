@@ -36,7 +36,8 @@ import {
   LogOut,
   Settings,
   Users,
-  UserPlus
+  UserPlus,
+  InfoIcon
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -51,6 +52,7 @@ const mainNavItems = [
   { title: "Itens", href: "/dashboard/items", icon: Box },
   { title: "Usuários", href: "/dashboard/users", icon: Users },
   { title: "Convites", href: "/dashboard/invites", icon: UserPlus },
+  { title: "Colaboradores", href: "/dashboard/about", icon: InfoIcon },
   // { title: "Estoque", href: "/dashboard/stock", icon: Warehouse },
   //{ title: "Manutenção", href: "/dashboard/maintenance", icon: Wrench },
   //{ title: "Projetos", href: "/dashboard/projects", icon: ClipboardList },
