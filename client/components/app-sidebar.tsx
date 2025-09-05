@@ -107,7 +107,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" side="left" className="border-r transition-all duration-300 ease-in-out">
       {/* === CABEÇALHO DA SIDEBAR === */}
       <SidebarHeader className="p-2 border-b bg-white">
-        <Link href="/dashboard" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md transition-colors">
+        <Link href="/dashboard" className="flex items-center gap-2 p-1 m-auto">
           {/* Logo do projeto substituindo o ícone e texto antigo */}
           <img src="/idealab_azul.png" alt="IDEA LAB idp logo" className="h-8 w-auto" />
         </Link>
