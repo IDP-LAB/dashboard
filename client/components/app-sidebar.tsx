@@ -53,6 +53,8 @@ const mainNavItems = [
   { title: "Itens", href: "/dashboard/items", icon: Box },
   { title: "Usuários", href: "/dashboard/users", icon: Users },
   { title: "Convites", href: "/dashboard/invites", icon: UserPlus },
+  { title: "Projetos Aluno", href: "/dashboard/student/projectsStudent", icon: ClipboardList },
+  { title: "Projetos Professor", href: "/dashboard/teacher/projectsTeacher", icon: ClipboardList },
   // { title: "Estoque", href: "/dashboard/stock", icon: Warehouse },
   //{ title: "Manutenção", href: "/dashboard/maintenance", icon: Wrench },
   //{ title: "Relatórios", href: "/dashboard/reports", icon: BarChart3 },
