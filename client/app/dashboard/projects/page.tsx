@@ -229,7 +229,7 @@ export default function ProjectsPage() {
 
       {/* Dialog para Formulários */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-xl w-full max-h-[90vh] overflow-y-auto">
           {dialogType === "form" && <ProjectForm project={selectedProject || undefined} onClose={handleCloseDialog} />}
           {dialogType === "associate" && selectedProject && (
             <AssociateItemsDialog project={selectedProject} onClose={handleCloseDialog} />
