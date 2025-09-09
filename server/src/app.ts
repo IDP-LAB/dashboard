@@ -5,9 +5,13 @@ import 'reflect-metadata'
 import { Fastify } from './controllers/fastify.js'
 import Database from './database/dataSource.js'
 import { registerRouter } from './scripts/routers.js'
+import { EmailManager } from './services/email/manager.js'
 
 const fastify = new Fastify({ port: Number(process.env['PORT']) || 3500, host: '0.0.0.0' })
+const emailManager = new EmailManager()
+
 await Database.initialize()
+await emailManager.initialize()
 
 await import('./scripts/register.js')
 
