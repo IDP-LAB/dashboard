@@ -38,7 +38,7 @@ export class Fastify {
       .register(fastifyCors, {
         origin: (origin, callback) => {
           // Permitir requisições sem origin (Postman, mobile apps, etc.)
-          if (!origin) return callback(null, true);
+          if (!origin) return callback(null, true)
           
           // Lista de origens permitidas
           const allowedOrigins = [
@@ -46,15 +46,15 @@ export class Fastify {
             'http://localhost:3001',
             'http://127.0.0.1:3000',
             'http://127.0.0.1:3001'
-          ];
+          ]
           
           // Verificar se é uma origem permitida ou se FRONT_END_URL está definido
           if (process.env.FRONT_END_URL === origin || allowedOrigins.includes(origin)) {
-            return callback(null, true);
+            return callback(null, true)
           }
           
           // Rejeitar outras origens
-          callback(new Error('Not allowed by CORS'), false);
+          callback(new Error('Not allowed by CORS'), false)
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],

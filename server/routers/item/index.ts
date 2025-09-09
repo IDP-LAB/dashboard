@@ -34,22 +34,22 @@ export default new Router({
           .select('group.id', 'groupUuid')
           // 3. Use COUNT(DISTINCT) para contar os itens corretamente após o JOIN com tags
           .addSelect('COUNT(DISTINCT item.id)', 'quantity')
-          .addSelect('MIN(item.id)', 'representativeId');
+          .addSelect('MIN(item.id)', 'representativeId')
 
         // Aplicar filtro de busca se fornecido
         if (search) {
           // 2. Use o alias 'tag' na condição WHERE
           qb = qb.where('(item.name LIKE :search OR item.description LIKE :search OR tag.name LIKE :search OR item.assetCode LIKE :search OR item.serial LIKE :search)', {
             search: `%${search}%`
-          });
+          })
         }
 
-        qb = qb.groupBy('group.id');
+        qb = qb.groupBy('group.id')
 
         // Contar total de grupos (após filtro de busca)
         // 4. A query de contagem também precisa do JOIN e do WHERE para ser precisa
         const countQb = repository.item.createQueryBuilder('item')
-          .innerJoin('item.group', 'group');
+          .innerJoin('item.group', 'group')
 
         if (search) {
           // Aplica o mesmo JOIN e WHERE na query de contagem
@@ -57,14 +57,14 @@ export default new Router({
             .innerJoin('group.tags', 'tag')
             .where('(item.name LIKE :search OR item.description LIKE :search OR tag.name LIKE :search OR item.assetCode LIKE :search OR item.serial LIKE :search)', {
               search: `%${search}%`
-            });
+            })
         }
 
         // A contagem de grupos distintos continua correta
-        countQb.select('COUNT(DISTINCT group.id)', 'count');
+        countQb.select('COUNT(DISTINCT group.id)', 'count')
 
-        const totalGroupsResult = await countQb.getRawOne();
-        const totalGroups = parseInt(totalGroupsResult?.count ?? '0', 10);
+        const totalGroupsResult = await countQb.getRawOne()
+        const totalGroups = parseInt(totalGroupsResult?.count ?? '0', 10)
 
         // O restante do seu código permanece o mesmo...
         const groupedItems = await qb
@@ -72,7 +72,7 @@ export default new Router({
           .orderBy('group.createdAt', (orderDirection ?? 'DESC') as 'ASC' | 'DESC')
           .limit(pageSize)
           .offset((page - 1) * pageSize)
-          .getRawMany();
+          .getRawMany()
 
         if (groupedItems.length === 0) {
           return reply.code(200).send({
