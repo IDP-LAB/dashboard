@@ -48,6 +48,8 @@ const formSchema = z.object({
   status: z.nativeEnum(ItemStatus),
   minStockLevel: z.number().optional(),
   currentStock: z.number().optional(),
+  assetCode: z.string().optional(),
+  serial: z.string().optional(),
 })
 
 // Opções dinâmicas de status a partir de um JSON
@@ -86,7 +88,8 @@ export function ItemForm({
   disableType = false,
   hideAcquisitionDate = false,
   hideStatus = false,
-  hideHeader = false
+  hideHeader = false,
+  hideIdentificationCodes = false
 }: {
   item?: ItemProperties & { category?: { id: number; name: string }; group?: { id: string } }
   isGroupEdit?: boolean
@@ -106,6 +109,7 @@ export function ItemForm({
   hideAcquisitionDate?: boolean
   hideStatus?: boolean
   hideHeader?: boolean
+  hideIdentificationCodes?: boolean
 }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -114,6 +118,8 @@ export function ItemForm({
   const [photos, setPhotos] = useState<File[]>([])
   const [documents, setDocuments] = useState<File[]>([])
   const [isCreatingCategory, setIsCreatingCategory] = useState(false)
+  const [batchAssetCodes, setBatchAssetCodes] = useState<string[]>([])
+  const [batchSerials, setBatchSerials] = useState<string[]>([])
 
   // Uuid efetivo do grupo: prioridade para prop, depois item.group?.id ou item.groupUuid (payloads de listagem de grupo)
   const effectiveGroupUuid: string | undefined = 
@@ -157,6 +163,7 @@ export function ItemForm({
   const { formState: { isSubmitting }, watch, setValue } = form
   const itemType = watch("type") // Observa o campo 'type' para renderização condicional
   const tagsValues = watch("tags") as TagOption[] | undefined
+  const quantityValue = watch("quantity")
 
   // Função para criar nova categoria quando necessário (no submit)
   const createCategoryIfNeeded = async (category: {id: number, name: string}) => {
@@ -196,6 +203,8 @@ export function ItemForm({
           description: values.description,
           location: values.location,
         }
+        if ((values.serial ?? '').length > 0) changedData.serial = values.serial
+        if ((values.assetCode ?? '').length > 0) changedData.assetCode = values.assetCode
         if (!hideStatus) {
           changedData.status = values.status ?? undefined
         }
@@ -256,6 +265,26 @@ export function ItemForm({
         if (values.price) formData.append('price', values.price.toString())
         if (values.acquisitionAt) formData.append('acquisitionAt', format(values.acquisitionAt, "yyyy-MM-dd"))
         if (groupUuid) formData.append('groupUuid', groupUuid)
+        // Envio de códigos
+        if (values.quantity > 1) {
+          // Quando for batch, não enviar os campos únicos; preencher índice 0 a partir deles caso existam
+          if ((values.assetCode ?? '').length > 0) {
+            formData.append(`assetCodes[0]`, String(values.assetCode))
+          }
+          if ((values.serial ?? '').length > 0) {
+            formData.append(`serials[0]`, String(values.serial))
+          }
+          for (let i = 0; i < values.quantity; i++) {
+            const ac = batchAssetCodes[i]
+            const se = batchSerials[i]
+            if (ac && ac.length > 0) formData.append(`assetCodes[${i}]`, ac)
+            if (se && se.length > 0) formData.append(`serials[${i}]`, se)
+          }
+        } else {
+          // Quando for item único
+          if ((values.assetCode ?? '').length > 0) formData.append('assetCode', String(values.assetCode))
+          if ((values.serial ?? '').length > 0) formData.append('serial', String(values.serial))
+        }
         // Tags (array)
         const tags = (tagsValues ?? []) as TagOption[]
         tags.forEach((tag, index) => {
@@ -473,6 +502,131 @@ export function ItemForm({
                   </FormItem>
                 )}
               />
+            )}
+
+            {/* Códigos de identificação (mostrar apenas em edição ou quando quantidade = 1) */}
+            {!hideIdentificationCodes && (item || Number(quantityValue) <= 1) && (
+              <div className="grid md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="serial"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Série</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Opcional" {...field} disabled={disableSharedFields} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="assetCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Patrimônio</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Opcional" {...field} disabled={disableSharedFields} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Inputs adicionais quando batch (quantity > 1) */}
+            {!hideIdentificationCodes && (!item && !hideQuantity && Number(quantityValue) > 1) && (
+              <div className="space-y-2 border rounded-md p-4">
+                <h4 className="font-medium">Códigos por item (opcional)</h4>
+                <p className="text-sm text-muted-foreground">Preencha, se desejar, os códigos por unidade. Deixe em branco para não definir.</p>
+                <div className="grid gap-3">
+                  {Array.from({ length: Number(quantityValue) }).map((_, idx) => (
+                    <div key={idx} className="grid md:grid-cols-2 gap-3">
+                      {idx === 0 ? (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="serial"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Série do item #1</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    id={`batch-serial-${idx}`}
+                                    placeholder="Opcional"
+                                    value={field.value ?? ''}
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value)
+                                      const copy = [...batchSerials]
+                                      copy[idx] = e.target.value
+                                      setBatchSerials(copy)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="assetCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Patrimônio do item #1</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    id={`batch-asset-${idx}`}
+                                    placeholder="Opcional"
+                                    value={field.value ?? ''}
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value)
+                                      const copy = [...batchAssetCodes]
+                                      copy[idx] = e.target.value
+                                      setBatchAssetCodes(copy)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <Label htmlFor={`batch-serial-${idx}`}>Série do item #{idx + 1}</Label>
+                            <Input
+                              id={`batch-serial-${idx}`}
+                              placeholder="Opcional"
+                              value={batchSerials[idx] ?? ''}
+                              onChange={(e) => {
+                                const copy = [...batchSerials]
+                                copy[idx] = e.target.value
+                                setBatchSerials(copy)
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`batch-asset-${idx}`}>Patrimônio do item #{idx + 1}</Label>
+                            <Input
+                              id={`batch-asset-${idx}`}
+                              placeholder="Opcional"
+                              value={batchAssetCodes[idx] ?? ''}
+                              onChange={(e) => {
+                                const copy = [...batchAssetCodes]
+                                copy[idx] = e.target.value
+                                setBatchAssetCodes(copy)
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             <h3 className="text-lg font-medium border-t pt-4">Detalhes do Equipamento</h3>

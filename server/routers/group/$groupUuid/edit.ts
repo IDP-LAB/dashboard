@@ -17,7 +17,7 @@ const idOrNameSchema = z.object({
 })
 
 const editGroupSchema = z.object({
-  name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
+  name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
   type: z.nativeEnum(ItemType),
   category: z.object({
     id: z.number(),

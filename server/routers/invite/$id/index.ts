@@ -59,7 +59,7 @@ export default new Router({
           data: saved
         })
       } catch (error) {
-        // eslint-disable-next-line no-console
+         
         console.error('Erro ao atualizar convite:', error)
         return reply.code(500).send({ message: 'Erro interno do servidor ao atualizar convite' })
       }
@@ -81,7 +81,7 @@ export default new Router({
           data: null
         })
       } catch (error) {
-        // eslint-disable-next-line no-console
+         
         console.error('Erro ao deletar convite:', error)
         return reply.code(500).send({ message: 'Erro interno do servidor ao deletar convite' })
       }

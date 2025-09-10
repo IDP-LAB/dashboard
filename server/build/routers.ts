@@ -27,7 +27,6 @@ import InviteById from '../routers/invite/$id/index.js'
 import InviteClaim from '../routers/invite/$code.js'
 import Invites from '../routers/invite/index.js'
 import ListItems from '../routers/item/index.js'
-import ListLogs from '../routers/logs/index.js'
 import ListProjects from '../routers/project/index.js'
 import ListUsers from '../routers/users/index.js'
 import ReturnItemByGroup from '../routers/item/return.js'
@@ -58,7 +57,6 @@ export const routers = {
   '/item/consume': ConsumeItemByGroup,
   '/item/return': ReturnItemByGroup,
   '/item/transfer': FindandTransferItem,
-  '/logs': ListLogs,
   '/project': [CreateProject, ListProjects],
   '/project/:id': [DeleteProject, EditProject, GetProject],
   '/tag': Tags,

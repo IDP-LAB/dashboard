@@ -21,6 +21,8 @@ export default new Router({
       price: z.number().positive().optional(),
       type: z.nativeEnum(ItemType).optional(),
       status: z.nativeEnum(ItemStatus).optional(),
+      assetCode: z.string().max(256).optional(),
+      serial: z.string().max(256).optional(),
       category: idOrNameSchema.optional(),
       tags: z.array(idOrNameSchema).optional(),
       acquisitionAt: z.string().optional(),

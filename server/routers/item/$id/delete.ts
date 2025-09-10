@@ -15,7 +15,7 @@ export default new Router({
   authenticate: true,
   schema: {
     delete: z.object({
-      returnProducts: z.boolean()
+      returnProducts: z.boolean().optional()
     }).default({ returnProducts: false })
   },
   methods: {

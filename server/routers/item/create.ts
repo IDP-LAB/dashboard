@@ -5,7 +5,7 @@ import { ItemCategory } from '@/database/entity/ItemCategory'
 import { ItemTag } from '@/database/entity/ItemTag'
 import { File, FileType } from '@/database/entity/File'
 import { Group } from '@/database/entity/Group'
-import { ItemStatus, ItemType } from '@/database/enums'
+import { ItemStatus, ItemType, Role } from '@/database/enums'
 import { storage } from '@/index'
 import { z } from 'zod'
 import { nanoid } from 'nanoid'
@@ -21,6 +21,8 @@ export const idOrNameSchema = z.object({
 const itemSchema = z.object({
   name: z.string().max(256),
   description: z.string().max(2048).optional(),
+  assetCode: z.string().max(256).optional(),
+  serial: z.string().max(256).optional(),
   location: z.string().max(256).optional(),
   price: z.number().positive().optional(),
   type: z.nativeEnum(ItemType).optional().default(ItemType.Consumable),
@@ -41,13 +43,11 @@ export default new Router({
   name: 'CreateItem',
   path: '/item',
   description: 'Cria um ou mais itens e os agrupa em um Group (UUID). Se um grupo similar já existir, os novos itens serão adicionados a ele.',
-  authenticate: true,
-  // Removido schema para permitir multipart/form-data
+  authenticate: [Role.Administrator],
   methods: {
     async post({ reply, request }) {
-      // Processar multipart/form-data
       const parts = request.parts()
-      const fields: Record<string, any> = { tags: [] }
+      const fields: Record<string, any> = { tags: [], assetCodes: [], serials: [] }
       const files: FileMetadata[] = []
       
       for await (const part of parts) {
@@ -94,6 +94,12 @@ export default new Router({
                 fields.tags[index][key] = value
               }
             }
+          } else if (/^assetCodes\[(\d+)\]$/.test(part.fieldname)) {
+            const index = parseInt(part.fieldname.match(/^assetCodes\[(\d+)\]$/)![1], 10)
+            fields.assetCodes[index] = String(value)
+          } else if (/^serials\[(\d+)\]$/.test(part.fieldname)) {
+            const index = parseInt(part.fieldname.match(/^serials\[(\d+)\]$/)![1], 10)
+            fields.serials[index] = String(value)
           } else {
             fields[part.fieldname] = value
           }
@@ -159,7 +165,11 @@ export default new Router({
         }
 
         const items: Partial<Item>[] = []
+        const hasBatchAsset = Array.isArray(fields.assetCodes)
+        const hasBatchSerial = Array.isArray(fields.serials)
         for (let i = 0; i < schema.quantity; i++) {
+          const batchAsset = hasBatchAsset ? (typeof fields.assetCodes[i] === 'string' && fields.assetCodes[i].length > 0 ? fields.assetCodes[i] : undefined) : undefined
+          const batchSerial = hasBatchSerial ? (typeof fields.serials[i] === 'string' && fields.serials[i].length > 0 ? fields.serials[i] : undefined) : undefined
           const newItem: Partial<Item> = {
             name: schema.name,
             description: schema.description,
@@ -170,6 +180,9 @@ export default new Router({
             acquisitionAt: schema.acquisitionAt,
             group: group!,
             createdBy: { id: request.user.id } as any,
+            // Preferir arrays quando presentes; só usar campos únicos quando não for batch
+            assetCode: hasBatchAsset || hasBatchSerial ? batchAsset : (fields.assetCode ?? undefined),
+            serial: hasBatchAsset || hasBatchSerial ? batchSerial : (fields.serial ?? undefined),
           }
           items.push(newItem)
         }

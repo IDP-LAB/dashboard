@@ -24,7 +24,7 @@ export default new Router({
         return reply.code(400).send({ message: 'Parâmetros de consulta inválidos.', error: validation.error })
       }
 
-      const { page, pageSize, groupBy, interval, search } = validation.data
+      const { page, pageSize, groupBy, interval, search, orderDirection } = validation.data
 
       if (groupBy === 'groupUuid') {
         let qb = repository.item.createQueryBuilder('item')
@@ -34,44 +34,45 @@ export default new Router({
           .select('group.id', 'groupUuid')
           // 3. Use COUNT(DISTINCT) para contar os itens corretamente após o JOIN com tags
           .addSelect('COUNT(DISTINCT item.id)', 'quantity')
-          .addSelect('MIN(item.id)', 'representativeId');
+          .addSelect('MIN(item.id)', 'representativeId')
 
         // Aplicar filtro de busca se fornecido
         if (search) {
           // 2. Use o alias 'tag' na condição WHERE
-          qb = qb.where('item.name LIKE :search OR item.description LIKE :search OR tag.name LIKE :search', {
+          qb = qb.where('(item.name LIKE :search OR item.description LIKE :search OR tag.name LIKE :search OR item.assetCode LIKE :search OR item.serial LIKE :search)', {
             search: `%${search}%`
-          });
+          })
         }
 
-        qb = qb.groupBy('group.id');
+        qb = qb.groupBy('group.id')
 
         // Contar total de grupos (após filtro de busca)
         // 4. A query de contagem também precisa do JOIN e do WHERE para ser precisa
         const countQb = repository.item.createQueryBuilder('item')
-          .innerJoin('item.group', 'group');
+          .innerJoin('item.group', 'group')
 
         if (search) {
           // Aplica o mesmo JOIN e WHERE na query de contagem
           countQb
             .innerJoin('group.tags', 'tag')
-            .where('item.name LIKE :search OR item.description LIKE :search OR tag.name LIKE :search', {
+            .where('(item.name LIKE :search OR item.description LIKE :search OR tag.name LIKE :search OR item.assetCode LIKE :search OR item.serial LIKE :search)', {
               search: `%${search}%`
-            });
+            })
         }
 
         // A contagem de grupos distintos continua correta
-        countQb.select('COUNT(DISTINCT group.id)', 'count');
+        countQb.select('COUNT(DISTINCT group.id)', 'count')
 
-        const totalGroupsResult = await countQb.getRawOne();
-        const totalGroups = parseInt(totalGroupsResult?.count ?? '0', 10);
+        const totalGroupsResult = await countQb.getRawOne()
+        const totalGroups = parseInt(totalGroupsResult?.count ?? '0', 10)
 
         // O restante do seu código permanece o mesmo...
         const groupedItems = await qb
-          .orderBy('MIN(item.id)', 'ASC')
+          // Ordena pela data de criação do grupo
+          .orderBy('group.createdAt', (orderDirection ?? 'DESC') as 'ASC' | 'DESC')
           .limit(pageSize)
           .offset((page - 1) * pageSize)
-          .getRawMany();
+          .getRawMany()
 
         if (groupedItems.length === 0) {
           return reply.code(200).send({
@@ -95,18 +96,22 @@ export default new Router({
         const representativeItems = await repository.item.find({
           where: { id: In(representativeIds) },
           relations: { group: { category: true, tags: true } },
-          order: { id: 'ASC' }
         })
 
-        const data = representativeItems.map(item => ({
-          ...item,
-          // Compatibilidade: expor groupUuid no payload
-          groupUuid: item.group?.id,
-          // Compatibilidade: expor category/tags a partir do grupo
-          category: (item.group)?.category ?? null,
-          tags: (item.group)?.tags ?? [],
-          quantity: quantityMap.get(item.group?.id ?? '') || 0
-        }))
+        // Reordenar para preservar a ordenação de groupedItems
+        const idToItem = new Map<number, typeof representativeItems[number]>()
+        for (const item of representativeItems) idToItem.set(item.id, item)
+        const data = groupedItems.map(g => {
+          const representativeId = parseInt(g.representativeId, 10)
+          const item = idToItem.get(representativeId)!
+          return {
+            ...item,
+            groupUuid: item.group?.id,
+            category: (item.group)?.category ?? null,
+            tags: (item.group)?.tags ?? [],
+            quantity: quantityMap.get(item.group?.id ?? '') || 0
+          }
+        })
 
         return reply.code(200).send({
           message: 'Itens agrupados retornados com sucesso.',
@@ -125,7 +130,9 @@ export default new Router({
         repository: repository.item,
         page,
         interval,
-        pageSize
+        pageSize,
+        orderBy: 'createdAt',
+        orderDirection
       })
 
       return reply.code(200).send({
