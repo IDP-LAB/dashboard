@@ -10,6 +10,7 @@ export class Env {
   constructor (public options?: EnvParams) {}
 
   loader () {
+
     const locale = this.options?.cwd ?? cwd
     const filePath = join(locale, (this.options?.envName ?? '.env'))
 
@@ -21,17 +22,18 @@ export class Env {
 
     while ((match = regex.exec(content)) !== null) {
       const value = this.parser(match[2])
-      matches.push({ variable: match[1], value })
+      matches.push({ variable: match[1], value: value.toString().trim() })
     }
   
     for (const { value, variable } of matches) {
-      process.env[variable] = value
+      process.env[variable] = value.toString().trim()
     }
     
     return matches
   }
 
   parser (value: string) {
+    value = value.trim()
     switch (true) {
     case !Number.isNaN(Number(value)): return Number(value)
     case /^(true|false)$/.test(value): {

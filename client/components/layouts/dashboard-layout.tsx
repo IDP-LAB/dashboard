@@ -25,10 +25,8 @@ export function DashboardLayout({
         <header className="sticky top-0 z-10 flex h-[57px] items-center justify-between gap-1 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
           {/* Lado esquerdo do header - trigger da sidebar e título */}
           <div className="flex items-center gap-1">
-            {/* Botão para abrir/fechar sidebar (visível apenas em mobile) */}
-            <SidebarTrigger className="md:hidden hover:bg-accent transition-colors" />
-            {/* Logo do projeto substituindo o título antigo */}
-            <img src="/idealab_azul.png" alt="IDEA LAB idp logo" className="h-16 w-auto ml-2 hidden sm:block" />
+            {/* Botão para abrir/fechar sidebar */}
+            <SidebarTrigger className="hover:bg-accent transition-colors h-4 w-4" />
           </div>
 
           {/* Lado direito do header - notificações */}

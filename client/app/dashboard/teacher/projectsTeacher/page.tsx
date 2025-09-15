@@ -1,27 +1,37 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ProjectsTimelineChart } from "@/components/charts/projects-timeline-chart"
-import { UserActivityChart } from "@/components/charts/user-activity-chart"
-import { ProjectForm } from "@/components/projects/project-form"
-import { AssociateItemsDialog } from "@/components/projects/associate-items-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { PlusCircle, Target, MoreHorizontal, Edit, Link, Eye, Trash2 } from "lucide-react"
+import { Edit, Eye, Link, MoreHorizontal, PlusCircle, Trash2 } from "lucide-react"
 import { mockProjects } from "@/lib/data"
-import type { Project, ProjectStatus } from "@/lib/types"
+import { ProjectForm } from "@/components/projects/project-form"
+import { AssociateItemsDialog } from "@/components/projects/associate-items-dialog"
 
-export default function ProjectsPage() {
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [dialogType, setDialogType] = useState<"form" | "associate" | null>(null)
+export default function TeacherProjectsPage() {
+  const [search, setSearch] = useState("")
+  const [status, setStatus] = useState<string>("all")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [dialogType, setDialogType] = useState<"form" | "associate" | null>(null)
+  const [selectedProject, setSelectedProject] = useState<any | null>(null)
 
-  const getStatusColor = (status: ProjectStatus) => {
+  const filtered = useMemo(() => {
+    return mockProjects.filter((p) => {
+      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.leaderName.toLowerCase().includes(search.toLowerCase())
+      const matchesStatus = status === "all" ? true : p.status === status
+      return matchesSearch && matchesStatus
+    })
+  }, [search, status])
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
@@ -38,7 +48,7 @@ export default function ProjectsPage() {
     }
   }
 
-  const getStatusLabel = (status: ProjectStatus) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case "active":
         return "Ativo"
@@ -55,19 +65,19 @@ export default function ProjectsPage() {
     }
   }
 
-  const handleNewProject = () => {
+  const openNewProject = () => {
     setSelectedProject(null)
     setDialogType("form")
     setIsDialogOpen(true)
   }
 
-  const handleEditProject = (project: Project) => {
+  const openEditProject = (project: any) => {
     setSelectedProject(project)
     setDialogType("form")
     setIsDialogOpen(true)
   }
 
-  const handleAssociateItems = (project: Project) => {
+  const openAssociateItems = (project: any) => {
     setSelectedProject(project)
     setDialogType("associate")
     setIsDialogOpen(true)
@@ -79,7 +89,6 @@ export default function ProjectsPage() {
     setSelectedProject(null)
   }
 
-  const activeProjects = mockProjects.filter((p) => p.status === "active")
   const projectStats = {
     total: mockProjects.length,
     active: mockProjects.filter((p) => p.status === "active").length,
@@ -88,33 +97,30 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Gerenciamento de Projetos</h2>
-          <p className="text-muted-foreground">Associe itens a projetos e acompanhe o uso de recursos.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Projetos do Professor</h2>
+          <p className="text-muted-foreground">Crie, gerencie e associe itens aos projetos.</p>
         </div>
-        <Button onClick={handleNewProject}>
+        <Button onClick={openNewProject}>
           <PlusCircle className="mr-2 h-4 w-4" /> Novo Projeto
         </Button>
       </div>
 
-      {/* Estatísticas dos Projetos */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Projetos</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projectStats.total}</div>
-            <p className="text-xs text-muted-foreground">Todos os projetos</p>
+            <p className="text-xs text-muted-foreground">Projetos cadastrados</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Projetos Ativos</CardTitle>
-            <Target className="h-4 w-4 text-green-500" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Ativos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projectStats.active}</div>
@@ -122,9 +128,8 @@ export default function ProjectsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Concluídos</CardTitle>
-            <Target className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projectStats.completed}</div>
@@ -132,9 +137,8 @@ export default function ProjectsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Em Planejamento</CardTitle>
-            <Target className="h-4 w-4 text-amber-500" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Planejamento</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projectStats.planning}</div>
@@ -143,11 +147,41 @@ export default function ProjectsPage() {
         </Card>
       </div>
 
-      {/* Lista de Projetos */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Projetos</CardTitle>
-          <CardDescription>Todos os projetos cadastrados no sistema</CardDescription>
+          <CardTitle>Pesquisar</CardTitle>
+          <CardDescription>Filtre por nome, responsável e status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Input
+              placeholder="Buscar por nome ou responsável"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <div className="md:col-span-1">
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="planning">Planejamento</SelectItem>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="on_hold">Em Pausa</SelectItem>
+                  <SelectItem value="completed">Concluído</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Projetos</CardTitle>
+          <CardDescription>Gerencie os projetos cadastrados</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -159,12 +193,11 @@ export default function ProjectsPage() {
                 <TableHead>Progresso</TableHead>
                 <TableHead>Prazo</TableHead>
                 <TableHead className="hidden md:table-cell">Itens</TableHead>
-                <TableHead className="hidden lg:table-cell">Orçamento</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockProjects.map((project) => (
+              {filtered.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell className="font-medium">{project.name}</TableCell>
                   <TableCell>{project.leaderName}</TableCell>
@@ -180,10 +213,7 @@ export default function ProjectsPage() {
                     </div>
                   </TableCell>
                   <TableCell>{new Date(project.deadline).toLocaleDateString("pt-BR")}</TableCell>
-                  <TableCell className="hidden md:table-cell">{project.associatedItems.length}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    {project.budget ? `R$ ${project.budget.toLocaleString()}` : "-"}
-                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{project.associatedItems?.length || 0}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -196,11 +226,11 @@ export default function ProjectsPage() {
                           <Eye className="mr-2 h-4 w-4" />
                           Ver Detalhes
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                        <DropdownMenuItem onClick={() => openEditProject(project)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleAssociateItems(project)}>
+                        <DropdownMenuItem onClick={() => openAssociateItems(project)}>
                           <Link className="mr-2 h-4 w-4" />
                           Associar Itens
                         </DropdownMenuItem>
@@ -218,19 +248,11 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>
 
-      {/* Gráficos de Projetos */}
-      <div className="grid gap-6 md:grid-cols-1">
-        <ProjectsTimelineChart />
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-1">
-        <UserActivityChart />
-      </div>
-
-      {/* Dialog para Formulários */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-xl w-full max-h-[90vh] overflow-y-auto">
-          {dialogType === "form" && <ProjectForm project={selectedProject || undefined} onClose={handleCloseDialog} />}
+          {dialogType === "form" && (
+            <ProjectForm project={selectedProject || undefined} onClose={handleCloseDialog} />
+          )}
           {dialogType === "associate" && selectedProject && (
             <AssociateItemsDialog project={selectedProject} onClose={handleCloseDialog} />
           )}
