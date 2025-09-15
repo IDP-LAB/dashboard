@@ -2,8 +2,14 @@ export type TProcessEnv = {
   PRODUCTION: string
   PORT: string
   REDIS_HOST: string
-  REDIS_PORT: string
-  REDIS_PASSWORD: string
+  REDIS_PORT: number
+  REDIS_PASSWORD: number
+  SMTP_HOST: string
+  SMTP_PORT: number
+  SMTP_USER: string
+  SMTP_PASS: string
+  SMTP_SECURE: boolean
+  SMTP_TLS_REJECT_UNAUTHORIZED: boolean
   DATABASE_TYPE: string
   DATABASE_FILE: string
   JWT_TOKEN: string

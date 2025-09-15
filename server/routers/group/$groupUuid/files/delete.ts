@@ -22,7 +22,7 @@ export default new Router({
           where: { 
             id: parseInt(fileId),
           }
-        , relations: { group: true } })
+          , relations: { group: true } })
 
         if (!file) {
           return reply.status(404).send({
